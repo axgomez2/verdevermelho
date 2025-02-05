@@ -34,14 +34,15 @@
                 <div class="overflow-x-auto">
                     <table class="table w-full">
                         <thead>
-                            <tr>
-                                <th>Cover</th>
-                                <th>Informações do Disco</th>
-                                <th>Preço de venda</th>
-                                <th>Preço promocional</th>
-                                <th>Ano</th>
-                                <th>Estoque</th>
-                                <th>Ações</th>
+                            <tr class="border border-slate-700 rounded-lg overflow-hidden">
+                                <th class="border border-slate-700 rounded-lg overflow-hidden">Cover</th>
+                                <th class="border border-slate-700 rounded-lg overflow-hidden">Informações do Disco</th>
+                                <th class="border border-slate-700 rounded-lg overflow-hidden">Preço de venda</th>
+                                <th class="border border-slate-700 rounded-lg overflow-hidden">Preço promocional</th>
+                                <th class="border border-slate-700 rounded-lg overflow-hidden">Ano</th>
+                                <th class="border border-slate-700 rounded-lg overflow-hidden">Estoque</th>
+                                <th class="border border-slate-700 rounded-lg overflow-hidden">editar</th>
+                                <th class="border border-slate-700 rounded-lg overflow-hidden">Ações</th>
                             </tr>
                         </thead>
                         <tbody>

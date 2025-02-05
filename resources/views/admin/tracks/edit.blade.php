@@ -6,7 +6,7 @@
 <div x-data="trackManager" class="container mx-auto px-4 py-6">
     <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-bold">Editar Faixas: {{ $vinyl->title }}</h2>
-        <a href="{{ route('admin.vinyls.show', $vinyl->id) }}" class="btn btn-ghost">Voltar</a>
+        <a href="{{ route('admin.vinyls.index') }}" class="btn btn-ghost">Voltar</a>
     </div>
 
     <div class="card bg-base-100 shadow-xl mb-6">

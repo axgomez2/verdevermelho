@@ -19,7 +19,7 @@
                         <div class="text-xs">Complete todos esses campos, é importante:</div>
                     </div>
                     <div>
-                        <a href="{{ $vinylMaster->discogs_url }}" target='_blank' class="btn btn-secondary">Link do disco no Discogs</a>
+                        <a href="{{ $vinylMaster->discogs_url }}" target='_blank' class="btn btn-red">Link do disco no Discogs</a>
                     </div>
                 </div>
 

@@ -4,7 +4,7 @@
 <div class="container mx-auto px-4 py-8">
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-3xl font-bold">Editar Disco: {{ $vinyl->title }}</h1>
-        <a href="{{ route('admin.vinyls.show', $vinyl->id) }}" class="btn btn-secondary">Voltar para Detalhes</a>
+        <a href="{{ route('admin.vinyls.index') }}" class="btn btn-secondary">Voltar para Detalhes</a>
     </div>
 
     <div class="card bg-base-100 shadow-xl">

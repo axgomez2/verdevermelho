@@ -35,7 +35,7 @@ class VinylController extends Controller
     {
         $vinyls = VinylMaster::with(['artists', 'genres', 'recordLabel', 'vinylSec'])
             ->orderBy('created_at', 'desc')
-            ->paginate(30);
+            ->paginate(50);
         return view('admin.vinyls.index', compact('vinyls'));
     }
 

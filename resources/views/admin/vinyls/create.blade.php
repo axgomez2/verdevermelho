@@ -3,7 +3,7 @@
 @section('title', 'Create New Vinyl')
 
 @section('content')
-<div x-data="vinylManager" class="container mx-auto px-4 py-8">
+<div x-data="vinylManager" class="container mx-auto px-4 py-8 bg-white text-gray-900">
     <div class="bg-white rounded-lg shadow-xl">
         <div class="p-6">
             <h2 class="text-2xl font-bold mb-6">Pesquisar novo disco:</h2>
@@ -88,10 +88,19 @@
                                                     <dd class="mt-1 text-sm text-gray-900">{{ $selectedRelease['num_for_sale'] }}</dd>
                                                 </div>
                                             @endif
+                                            @php
+                                                $exchangeRate = 5.8; // Taxa de câmbio fixa (1 USD = 5.0 BRL)
+                                                $lowestPriceUSD = $selectedRelease['lowest_price'] ?? 0;
+                                                $lowestPriceBRL = $lowestPriceUSD * $exchangeRate;
+                                            @endphp
+
                                             @if(isset($selectedRelease['lowest_price']))
                                                 <div class="sm:col-span-1">
                                                     <dt class="text-sm font-medium text-gray-500">Preço mais baixo</dt>
-                                                    <dd class="mt-1 text-sm text-gray-900">{{ $selectedRelease['lowest_price'] }} {{ $selectedRelease['price_currency'] ?? 'USD' }}</dd>
+                                                    <dd class="mt-1 text-sm text-gray-900">
+                                                        R$ {{ number_format($lowestPriceBRL, 2, ',', '.') }}
+                                                        <span class="text-xs text-gray-500">(US$ {{ $lowestPriceUSD }})</span>
+                                                    </dd>
                                                 </div>
                                             @endif
                                         </dl>
@@ -121,7 +130,7 @@
                                     @endif
 
                                     <div>
-                                        <a href="{{ $selectedRelease['uri'] }}" target='_blank' class="btn btn-secondary">Link do disco no Discogs</a>
+                                        <a href="{{ $selectedRelease['uri'] }}" target='_blank' class="btn btn-info">Link do disco no Discogs</a>
                                     </div>
                                 </div>
 
@@ -130,7 +139,7 @@
                                         <span x-show="saveLoading" class="loading loading-spinner loading-sm mr-2"></span>
                                         <span x-text="saveLoading ? 'Salvando...' : 'Salvar disco'"></span>
                                     </button>
-                                    <a href="{{ route('admin.vinyls.create') }}" class="btn btn-ghost ml-2">Voltar para busca</a>
+                                    <a href="{{ route('admin.vinyls.create') }}" class="btn btn-accent ml-2">Voltar para busca</a>
                                 </div>
                             </div>
                         </div>
@@ -218,14 +227,14 @@
                 <template x-if="modalStatus === 'success'">
                     <div>
                         <a :href="completeVinylUrl" class="btn btn-primary">Completar cadastro</a>
-                        <button @click="closeModalAndRedirect" class="btn btn-secondary">Voltar para lista de discos</button>
-                        <button @click="closeModal" class="btn btn-ghost">Fechar</button>
+                        <button @click="closeModalAndRedirect" class="btn btn-primary">Voltar para lista de discos</button>
+                        <button @click="closeModal" class="btn btn-error">Fechar</button>
                     </div>
                 </template>
                 <template x-if="modalStatus === 'exists'">
                     <div>
-                        <button @click="closeModalAndRedirect" class="btn btn-secondary">Voltar para lista de discos</button>
-                        <button @click="closeModal" class="btn btn-ghost">Fechar</button>
+                        <button @click="closeModalAndRedirect" class="btn btn-info">Voltar para lista de discos</button>
+                        <button @click="closeModal" class="btn btn-error">Fechar</button>
                     </div>
                 </template>
                 <template x-if="modalStatus === 'error'">
