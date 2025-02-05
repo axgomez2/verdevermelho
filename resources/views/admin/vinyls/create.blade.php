@@ -246,9 +246,7 @@
 </div>
 @endsection
 
-@push('scripts')
-<script>
-document.addEventListener('alpine@endsection
+
 
 @push('scripts')
 <script>

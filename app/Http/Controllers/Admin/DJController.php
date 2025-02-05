@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\DJ;
+use App\Models\Deejay;
 use App\Models\VinylMaster;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +14,7 @@ class DJController extends Controller
 {
     public function index()
     {
-        $djs = DJ::all();
+        $djs = Deejay::all();
         return view('admin.djs.index', compact('djs'));
     }
 
@@ -36,7 +36,7 @@ class DJController extends Controller
         DB::beginTransaction();
 
         try {
-            $dj = new DJ();
+            $dj = new Deejay();
             $dj->name = $validatedData['name'];
             $dj->slug = Str::slug($validatedData['name']);
             $dj->social_media = $validatedData['social_media'];
@@ -55,24 +55,26 @@ class DJController extends Controller
             return redirect()->route('admin.djs.index')->with('success', 'DJ criado com sucesso.');
         } catch (\Exception $e) {
             DB::rollBack();
+            // Log the error message for debugging
+            \Log::error('Erro ao criar DJ: ' . $e->getMessage());
             return back()->withInput()->with('error', 'Erro ao criar DJ: ' . $e->getMessage());
         }
     }
 
-    public function show(DJ $dj)
+    public function show(Deejay $dj)
     {
         $recommendations = $dj->recommendations()->orderBy('order')->get();
         return view('admin.djs.show', compact('dj', 'recommendations'));
     }
 
-    public function edit(DJ $dj)
+    public function edit(Deejay $dj)
     {
         $vinyls = VinylMaster::all();
         $recommendations = $dj->recommendations()->orderBy('order')->pluck('vinyl_masters.id')->toArray();
         return view('admin.djs.edit', compact('dj', 'vinyls', 'recommendations'));
     }
 
-    public function update(Request $request, DJ $dj)
+    public function update(Request $request, Deejay $dj)
     {
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
@@ -111,11 +113,13 @@ class DJController extends Controller
             return redirect()->route('admin.djs.index')->with('success', 'DJ atualizado com sucesso.');
         } catch (\Exception $e) {
             DB::rollBack();
+            // Log the error message for debugging
+            \Log::error('Erro ao atualizar DJ: ' . $e->getMessage());
             return back()->withInput()->with('error', 'Erro ao atualizar DJ: ' . $e->getMessage());
         }
     }
 
-    public function destroy(DJ $dj)
+    public function destroy(Deejay $dj)
     {
         if ($dj->image) {
             Storage::disk('public')->delete($dj->image);
@@ -125,7 +129,7 @@ class DJController extends Controller
         return redirect()->route('admin.djs.index')->with('success', 'DJ excluído com sucesso.');
     }
 
-    public function toggleActive(DJ $dj)
+    public function toggleActive(Deejay $dj)
     {
         $dj->is_active = !$dj->is_active;
         $dj->save();
@@ -133,14 +137,14 @@ class DJController extends Controller
         return redirect()->route('admin.djs.index')->with('success', 'Status do DJ atualizado com sucesso.');
     }
 
-    public function manageVinyls(DJ $dj)
+    public function manageVinyls(Deejay $dj)
     {
         $recommendations = $dj->recommendations()->orderBy('order')->get();
         $allVinyls = VinylMaster::with('artists')->paginate(20);
         return view('admin.djs.manage-vinyls', compact('dj', 'recommendations', 'allVinyls'));
     }
 
-    public function updateRecommendations(Request $request, DJ $dj)
+    public function updateRecommendations(Request $request, Deejay $dj)
     {
         $validatedData = $request->validate([
             'recommendations' => 'required|array|max:10',
@@ -170,8 +174,7 @@ class DJController extends Controller
                       $q->where('name', 'LIKE', "%{$query}%");
                   });
             })
-            ->limit(50)
-            ->get();
+            ->paginate(10); // Implement pagination
 
         return response()->json($vinyls);
     }
