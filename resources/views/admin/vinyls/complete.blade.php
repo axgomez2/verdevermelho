@@ -160,6 +160,7 @@
                         <option value="">Selecione estado da capa</option>
                         @foreach(['mint', 'near_mint', 'very_good', 'good', 'fair', 'poor'] as $status)
                             <option value="{{ $status }}">{{ ucfirst(str_replace('_', ' ', $status)) }}</option>
+                        @en$status}}">{{ ucfirst(str_replace('_', ' ', $status)) }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -351,4 +352,20 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        selectVideo(video)
+        selectVideo(video) {
+            if (this.activeInputField) {
+                this.activeInputField.value = `https://www.youtube.com/watch?v=${video.id.videoId}`;
+            }
+            this.closeModal();
+        },
+
+        closeModal() {
+            this.showModal = false;
+            this.youtubeResults = [];
+            this.activeInputField = null;
+        }
+    }));
+});
+</script>
+@endpush
+
