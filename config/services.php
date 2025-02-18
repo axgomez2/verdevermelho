@@ -39,4 +39,10 @@ return [
     'api_key' => env('YOUTUBE_API_KEY'),
     ],
 
+    'melhorenvio' => [
+    'token' => env('MELHORENVIO_API_TOKEN'),
+    'from_postal_code' => env('MELHORENVIO_FROM_POSTAL_CODE'),
+
+],
+
 ];

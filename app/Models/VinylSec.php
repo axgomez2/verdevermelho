@@ -61,4 +61,14 @@ class VinylSec extends Model
     {
         return $this->morphOne(Product::class, 'productable');
     }
+
+    public function categories()
+    {
+        return $this->belongsToMany(CatStyleShop::class, 'cat_style_shop_vinyl_sec');
+    }
+
+    public function playlistTracks()
+    {
+        return $this->morphMany(PlaylistTrack::class, 'trackable');
+    }
 }

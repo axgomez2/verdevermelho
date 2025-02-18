@@ -24,6 +24,17 @@ class DJController extends Controller
         return view('admin.djs.create', compact('vinyls'));
     }
 
+    private function handleImageUpload(Request $request, Deejay $dj = null)
+    {
+        if ($request->hasFile('image')) {
+            if ($dj && $dj->image) {
+                Storage::disk('public')->delete($dj->image);
+            }
+            return $request->file('image')->store('dj_images', 'public');
+        }
+        return null;
+    }
+
     public function store(Request $request)
     {
         $validatedData = $request->validate([
@@ -81,7 +92,7 @@ class DJController extends Controller
             'social_media' => 'nullable|string|max:255',
             'bio' => 'required|string',
             'image' => 'nullable|image|max:2048', // 2MB Max
-            'recommendations' => 'required|array|min:1|max:10',
+            'recommendations' => 'required|array|min:1',
             'recommendations.*' => 'exists:vinyl_masters,id',
         ]);
 
@@ -93,13 +104,7 @@ class DJController extends Controller
             $dj->social_media = $validatedData['social_media'];
             $dj->bio = $validatedData['bio'];
 
-            if ($request->hasFile('image')) {
-                if ($dj->image) {
-                    Storage::disk('public')->delete($dj->image);
-                }
-                $path = $request->file('image')->store('dj_images', 'public');
-                $dj->image = $path;
-            }
+        $dj->image = $this->handleImageUpload($request, $dj);
 
             $dj->save();
 

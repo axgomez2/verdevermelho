@@ -3,250 +3,315 @@
 @section('title', 'Create New Vinyl')
 
 @section('content')
-<div x-data="vinylManager" class="container mx-auto px-4 py-8 bg-white text-gray-900">
-    <div class="bg-white rounded-lg shadow-xl">
-        <div class="p-6">
-            <h2 class="text-2xl font-bold mb-6">Pesquisar novo disco:</h2>
+<div x-data="vinylManager" class="p-4">
+    <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+        <h2 class="text-xl font-semibold mb-4 text-gray-900">Pesquisar novo disco:</h2>
 
-            <form action="{{ route('admin.vinyls.create') }}" method="GET" @submit="startSearch">
-                <div class="flex items-center space-x-2">
-                    <input type="text" name="query" value="{{ $query }}" class="input input-bordered flex-grow" placeholder="Encontre o disco pelo artista, título ou código do disco">
-                    <button type="submit" class="btn btn-primary">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
-                        </svg>
-                        Pesquisar
-                    </button>
+        <form action="{{ route('admin.vinyls.create') }}" method="GET" @submit="startSearch()">
+            <div class="flex items-center gap-2">
+                <div class="flex-grow">
+                    <input type="text"
+                           name="query"
+                           value="{{ $query }}"
+                           class="form-input"
+                           placeholder="Encontre o disco pelo artista, título ou código do disco"
+                           required>
                 </div>
-            </form>
-            <div x-show="loading" class="mt-4">
-                <progress class="progress w-full"></progress>
+                <button type="submit"
+                        class="btn-primary"
+                        :disabled="loading">
+                    <template x-if="loading">
+                        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </template>
+                    <svg x-show="!loading" class="w-4 h-4 mr-2 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    <span x-text="loading ? 'Pesquisando...' : 'Pesquisar'"></span>
+                </button>
             </div>
+        </form>
 
-            <div id="searchResults">
-                @if($selectedRelease)
-                    <div class="mt-8 lg:max-w-4xl xl:max-w-6xl mx-auto">
-                        <h3 class="text-xl font-semibold mb-4">Você selecionou o disco: {{ $selectedRelease['title'] }}</h3>
+        <div id="searchResults" class="mt-6">
+            @if($selectedRelease)
+                <!-- Selected Release Content -->
+                <div class="max-w-6xl mx-auto">
+                    <h3 class="text-xl font-semibold mb-4 text-gray-900">Você selecionou o disco: {{ $selectedRelease['title'] }}</h3>
 
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div class="md:col-span-1">
-                                @if(isset($selectedRelease['images']) && count($selectedRelease['images']) > 0)
-                                    <img src="{{ $selectedRelease['images'][0]['uri'] }}" alt="{{ $selectedRelease['title'] }}" class="w-full rounded-lg shadow-lg">
-                                @else
-                                    <div class="w-full h-64 bg-gray-200 flex items-center justify-center rounded-lg">
-                                        <span class="text-gray-500">Sem imagem</span>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Image Column -->
+                        <div class="md:col-span-1">
+                            @if(isset($selectedRelease['images']) && count($selectedRelease['images']) > 0)
+                                <img src="{{ $selectedRelease['images'][0]['uri'] }}"
+                                     alt="{{ $selectedRelease['title'] }}"
+                                     class="w-full rounded-lg shadow-lg">
+                            @else
+                                <div class="w-full h-64 bg-gray-200 flex items-center justify-center rounded-lg">
+                                    <span class="text-gray-500">Sem imagem</span>
+                                </div>
+                            @endif
+                        </div>
+
+                        <!-- Details Column -->
+                        <div class="md:col-span-2 space-y-6">
+                            <!-- Basic Info -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <h4 class="text-sm font-medium text-gray-500">Artista</h4>
+                                    <p class="text-base text-gray-900">{{ implode(', ', array_column($selectedRelease['artists'], 'name')) }}</p>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-medium text-gray-500">Título</h4>
+                                    <p class="text-base text-gray-900">{{ $selectedRelease['title'] }}</p>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-medium text-gray-500">Ano</h4>
+                                    <p class="text-base text-gray-900">{{ $selectedRelease['year'] ?? 'Desconhecido' }}</p>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-medium text-gray-500">Gênero</h4>
+                                    <p class="text-base text-gray-900">{{ implode(', ', $selectedRelease['genres'] ?? ['Não especificado']) }}</p>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-medium text-gray-500">Estilos</h4>
+                                    <p class="text-base text-gray-900">{{ implode(', ', $selectedRelease['styles'] ?? ['Não especificado']) }}</p>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-medium text-gray-500">País</h4>
+                                    <p class="text-base text-gray-900">{{ $selectedRelease['country'] ?? 'Desconhecido' }}</p>
+                                </div>
+                                @if(isset($selectedRelease['labels']))
+                                    <div>
+                                        <h4 class="text-sm font-medium text-gray-500">Gravadora</h4>
+                                        <p class="text-base text-gray-900">{{ implode(', ', array_column($selectedRelease['labels'], 'name')) }}</p>
                                     </div>
                                 @endif
                             </div>
-                            <div class="md:col-span-2">
-                                <div class="space-y-4">
-                                    <dl class="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2">
-                                        <div class="sm:col-span-1">
-                                            <dt class="text-sm font-medium text-gray-500">Artista</dt>
-                                            <dd class="mt-1 text-sm text-gray-900">{{ implode(', ', array_column($selectedRelease['artists'], 'name')) }}</dd>
-                                        </div>
-                                        <div class="sm:col-span-1">
-                                            <dt class="text-sm font-medium text-gray-500">Título</dt>
-                                            <dd class="mt-1 text-sm text-gray-900">{{ $selectedRelease['title'] }}</dd>
-                                        </div>
-                                        <div class="sm:col-span-1">
-                                            <dt class="text-sm font-medium text-gray-500">Ano</dt>
-                                            <dd class="mt-1 text-sm text-gray-900">{{ $selectedRelease['year'] ?? 'Desconhecido' }}</dd>
-                                        </div>
-                                        <div class="sm:col-span-1">
-                                            <dt class="text-sm font-medium text-gray-500">Gênero</dt>
-                                            <dd class="mt-1 text-sm text-gray-900">{{ implode(', ', $selectedRelease['genres'] ?? ['Não especificado']) }}</dd>
-                                        </div>
-                                        <div class="sm:col-span-1">
-                                            <dt class="text-sm font-medium text-gray-500">Estilos</dt>
-                                            <dd class="mt-1 text-sm text-gray-900">{{ implode(', ', $selectedRelease['styles'] ?? ['Não especificado']) }}</dd>
-                                        </div>
-                                        <div class="sm:col-span-1">
-                                            <dt class="text-sm font-medium text-gray-500">País</dt>
-                                            <dd class="mt-1 text-sm text-gray-900">{{ $selectedRelease['country'] ?? 'Desconhecido' }}</dd>
-                                        </div>
-                                        @if(isset($selectedRelease['labels']))
-                                            <div class="sm:col-span-1">
-                                                <dt class="text-sm font-medium text-gray-500">Gravadora</dt>
-                                                <dd class="mt-1 text-sm text-gray-900">{{ implode(', ', array_column($selectedRelease['labels'], 'name')) }}</dd>
-                                            </div>
-                                        @endif
-                                    </dl>
 
-                                    <div>
-                                        <h4 class="text-lg font-semibold mb-2">Informações de Mercado (Discogs)</h4>
-                                        <dl class="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2">
-                                            @if(isset($selectedRelease['community']['have']))
-                                                <div class="sm:col-span-1">
-                                                    <dt class="text-sm font-medium text-gray-500">Quantidade em coleções</dt>
-                                                    <dd class="mt-1 text-sm text-gray-900">{{ $selectedRelease['community']['have'] }}</dd>
-                                                </div>
-                                            @endif
-                                            @if(isset($selectedRelease['num_for_sale']))
-                                                <div class="sm:col-span-1">
-                                                    <dt class="text-sm font-medium text-gray-500">Quantidade à venda</dt>
-                                                    <dd class="mt-1 text-sm text-gray-900">{{ $selectedRelease['num_for_sale'] }}</dd>
-                                                </div>
-                                            @endif
-                                            @php
-                                                $exchangeRate = 5.8; // Taxa de câmbio fixa (1 USD = 5.0 BRL)
-                                                $lowestPriceUSD = $selectedRelease['lowest_price'] ?? 0;
-                                                $lowestPriceBRL = $lowestPriceUSD * $exchangeRate;
-                                            @endphp
-
-                                            @if(isset($selectedRelease['lowest_price']))
-                                                <div class="sm:col-span-1">
-                                                    <dt class="text-sm font-medium text-gray-500">Preço mais baixo</dt>
-                                                    <dd class="mt-1 text-sm text-gray-900">
-                                                        R$ {{ number_format($lowestPriceBRL, 2, ',', '.') }}
-                                                        <span class="text-xs text-gray-500">(US$ {{ $lowestPriceUSD }})</span>
-                                                    </dd>
-                                                </div>
-                                            @endif
-                                        </dl>
-                                    </div>
-
-                                    @if(isset($selectedRelease['tracklist']))
+                            <!-- Market Info -->
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h4 class="text-lg font-semibold mb-3 text-gray-900">Informações de Mercado (Discogs)</h4>
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    @if(isset($selectedRelease['community']['have']))
                                         <div>
-                                            <h4 class="text-lg font-semibold mb-2">Tracklist</h4>
-                                            <ol class="list-decimal list-inside space-y-1">
-                                                @foreach($selectedRelease['tracklist'] as $track)
-                                                    <li class="text-sm">
-                                                        <span class="font-medium">{{ $track['title'] }}</span>
-                                                        @if(isset($track['duration']))
-                                                            <span class="text-gray-500 ml-2">({{ $track['duration'] }})</span>
-                                                        @endif
-                                                    </li>
-                                                @endforeach
-                                            </ol>
+                                            <h5 class="text-sm font-medium text-gray-500">Quantidade em coleções</h5>
+                                            <p class="text-base text-gray-900">{{ $selectedRelease['community']['have'] }}</p>
                                         </div>
                                     @endif
-
-                                    @if(isset($selectedRelease['notes']))
+                                    @if(isset($selectedRelease['num_for_sale']))
                                         <div>
-                                            <h4 class="text-lg font-semibold mb-2">Notas</h4>
-                                            <p class="text-sm text-gray-700">{{ $selectedRelease['notes'] }}</p>
+                                            <h5 class="text-sm font-medium text-gray-500">Quantidade à venda</h5>
+                                            <p class="text-base text-gray-900">{{ $selectedRelease['num_for_sale'] }}</p>
                                         </div>
                                     @endif
-
-                                    <div>
-                                        <a href="{{ $selectedRelease['uri'] }}" target='_blank' class="btn btn-info">Link do disco no Discogs</a>
-                                    </div>
+                                    @php
+                                        $exchangeRate = 5.8;
+                                        $lowestPriceUSD = $selectedRelease['lowest_price'] ?? 0;
+                                        $medianPriceUSD = $selectedRelease['median_price'] ?? 0;
+                                        $highestPriceUSD = $selectedRelease['highest_price'] ?? 0;
+                                        $lowestPriceBRL = $lowestPriceUSD * $exchangeRate;
+                                        $medianPriceBRL = $medianPriceUSD * $exchangeRate;
+                                        $highestPriceBRL = $highestPriceUSD * $exchangeRate;
+                                    @endphp
+                                    @if($lowestPriceUSD > 0)
+                                        <div>
+                                            <h5 class="text-sm font-medium text-gray-500">Preço mais baixo</h5>
+                                            <p class="text-base text-gray-900">
+                                                US$ {{ number_format($lowestPriceUSD, 2, ',', '.') }}
+                                                <span class="text-xs text-gray-500">(R$ {{ number_format($lowestPriceBRL, 2, ',', '.') }})</span>
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <h5 class="text-sm font-medium text-gray-500">Preço médio</h5>
+                                            <p class="text-base text-gray-900">
+                                                US$ {{ number_format($medianPriceUSD, 2, ',', '.') }}
+                                                <span class="text-xs text-gray-500">(R$ {{ number_format($medianPriceBRL, 2, ',', '.') }})</span>
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <h5 class="text-sm font-medium text-gray-500">Preço mais alto</h5>
+                                            <p class="text-base text-gray-900">
+                                                US$ {{ number_format($highestPriceUSD, 2, ',', '.') }}
+                                                <span class="text-xs text-gray-500">(R$ {{ number_format($highestPriceBRL, 2, ',', '.') }})</span>
+                                            </p>
+                                        </div>
+                                    @endif
                                 </div>
+                            </div>
 
-                                <div class="mt-6">
-                                    <button @click="saveVinyl({{ $selectedRelease['id'] }})" class="btn btn-primary" :disabled="saveLoading">
-                                        <span x-show="saveLoading" class="loading loading-spinner loading-sm mr-2"></span>
-                                        <span x-text="saveLoading ? 'Salvando...' : 'Salvar disco'"></span>
-                                    </button>
-                                    <a href="{{ route('admin.vinyls.create') }}" class="btn btn-accent ml-2">Voltar para busca</a>
+                            <!-- Tracklist -->
+                            @if(isset($selectedRelease['tracklist']))
+                                <div>
+                                    <h4 class="text-lg font-semibold mb-3 text-gray-900">Tracklist</h4>
+                                    <ul class="space-y-2">
+                                        @foreach($selectedRelease['tracklist'] as $track)
+                                            <li class="flex items-center text-gray-900">
+                                                <span class="w-6 h-6 flex items-center justify-center bg-gray-100 rounded-full mr-2 text-sm">
+                                                    {{ $loop->iteration }}
+                                                </span>
+                                                <span class="font-medium">{{ $track['title'] }}</span>
+                                                @if(isset($track['duration']))
+                                                    <span class="ml-2 text-sm text-gray-500">({{ $track['duration'] }})</span>
+                                                @endif
+                                            </li>
+                                        @endforeach
+                                    </ul>
                                 </div>
+                            @endif
+
+                            <!-- Notes -->
+                            @if(isset($selectedRelease['notes']))
+                                <div>
+                                    <h4 class="text-lg font-semibold mb-2 text-gray-900">Notas</h4>
+                                    <p class="text-sm text-gray-700">{{ $selectedRelease['notes'] }}</p>
+                                </div>
+                            @endif
+
+                            <!-- Actions -->
+                            <div class="flex flex-wrap gap-2">
+                                <a href="{{ $selectedRelease['uri'] }}"
+                                   target="_blank"
+                                   class="btn-primary bg-blue-700 hover:bg-blue-800">
+                                    Link do disco no Discogs
+                                </a>
+                                <button @click="saveVinyl({{ $selectedRelease['id'] }})"
+                                        class="btn-primary"
+                                        :disabled="saveLoading">
+                                    <template x-if="saveLoading">
+                                        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    </template>
+                                    <span x-text="saveLoading ? 'Salvando...' : 'Salvar disco'"></span>
+                                </button>
+                                <a href="{{ route('admin.vinyls.create') }}"
+                                   class="btn-secondary">
+                                    Voltar para busca
+                                </a>
                             </div>
                         </div>
                     </div>
-                @elseif(count($searchResults) > 0)
-                    <div class="mt-8" x-data="{ formatFilter: '', countryFilter: '', yearFilter: '' }">
-                        <h3 class="text-xl font-semibold mb-4">Resultados da Busca</h3>
+                </div>
+            @elseif(count($searchResults) > 0)
+                <!-- Search Results -->
+                <div x-data="{ formatFilter: '', countryFilter: '', yearFilter: '' }">
+                    <h3 class="text-xl font-semibold mb-4 text-gray-900">Resultados da Busca</h3>
 
-                        <div class="flex flex-wrap gap-4 mb-4">
-                            <select x-model="formatFilter" class="select select-bordered w-full max-w-xs">
-                                <option value="">Todos os Formatos</option>
-                                @foreach(collect($searchResults)->pluck('format')->flatten()->unique() as $format)
-                                    <option value="{{ $format }}">{{ $format }}</option>
-                                @endforeach
-                            </select>
+                    <!-- Filters -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                        <select x-model="formatFilter" class="form-input">
+                            <option value="">Todos os Formatos</option>
+                            @foreach(collect($searchResults)->pluck('format')->flatten()->unique() as $format)
+                                <option value="{{ $format }}">{{ $format }}</option>
+                            @endforeach
+                        </select>
 
-                            <select x-model="countryFilter" class="select select-bordered w-full max-w-xs">
-                                <option value="">Todos os Países</option>
-                                @foreach(collect($searchResults)->pluck('country')->unique() as $country)
-                                    <option value="{{ $country }}">{{ $country }}</option>
-                                @endforeach
-                            </select>
+                        <select x-model="countryFilter" class="form-input">
+                            <option value="">Todos os Países</option>
+                            @foreach(collect($searchResults)->pluck('country')->unique() as $country)
+                                <option value="{{ $country }}">{{ $country }}</option>
+                            @endforeach
+                        </select>
 
-                            <select x-model="yearFilter" class="select select-bordered w-full max-w-xs">
-                                <option value="">Todos os Anos</option>
-                                @foreach(collect($searchResults)->pluck('year')->filter()->unique() as $year)
-                                    <option value="{{ $year }}">{{ $year }}</option>
-                                @endforeach
-                                <option value="Desconhecido">Ano desconhecido</option>
-                            </select>
-                        </div>
+                        <select x-model="yearFilter" class="form-input">
+                            <option value="">Todos os Anos</option>
+                            @foreach(collect($searchResults)->pluck('year')->filter()->unique() as $year)
+                                <option value="{{ $year }}">{{ $year }}</option>
+                            @endforeach
+                            <option value="Desconhecido">Ano desconhecido</option>
+                        </select>
+                    </div>
 
-                        <div class="space-y-4">
-                            @foreach($searchResults as $result)
-                                <div class="card bg-base-100 shadow-sm"
-                                     x-show="
-                                        (!formatFilter || '{{ $result['format'][0] ?? '' }}'.includes(formatFilter)) &&
-                                        (!countryFilter || '{{ $result['country'] }}' === countryFilter) &&
-                                        (!yearFilter || '{{ $result['year'] ?? 'Desconhecido' }}' === yearFilter)
-                                     ">
-                                    <div class="card-body">
-                                        <div class="flex items-center space-x-4">
-                                            <div class="flex-shrink-0">
-                                                <img src="{{ $result['thumb'] ?? '/placeholder-image.jpg' }}" alt="{{ $result['title'] }}" class="w-16 h-16 object-cover rounded">
-                                            </div>
-                                            <div class="flex-grow">
-                                                <h4 class="text-lg font-semibold">{{ $result['title'] }}</h4>
-                                                <div class="text-sm text-gray-500">
-                                                    <span>{{ $result['year'] ?? 'Ano desconhecido' }}</span>
-                                                    @if(isset($result['format']))
-                                                        <span class="mx-2">|</span>
-                                                        <span>{{ $result['format'][0] ?? 'Format unknown' }}</span>
-                                                    @endif
-                                                    @if(isset($result['country']))
-                                                        <span class="mx-2">|</span>
-                                                        <span>{{ $result['country'] }}</span>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <a href="{{ route('admin.vinyls.create', ['release_id' => $result['id'], 'query' => $query]) }}" class="btn btn-primary btn-sm">
-                                                    Selecionar
-                                                </a>
-                                            </div>
+                    <!-- Results -->
+                    <div class="space-y-4">
+                        @foreach($searchResults as $result)
+                            <div class="card"
+                                 x-show="
+                                    (!formatFilter || '{{ $result['format'][0] ?? '' }}'.includes(formatFilter)) &&
+                                    (!countryFilter || '{{ $result['country'] }}' === countryFilter) &&
+                                    (!yearFilter || '{{ $result['year'] ?? 'Desconhecido' }}' === yearFilter)
+                                 ">
+                                <div class="p-4 flex items-center gap-4">
+                                    <img src="{{ $result['thumb'] ?? '/placeholder-image.jpg' }}"
+                                         alt="{{ $result['title'] }}"
+                                         class="w-16 h-16 object-cover rounded-lg">
+                                    <div class="flex-grow">
+                                        <h4 class="text-lg font-semibold text-gray-900">{{ $result['title'] }}</h4>
+                                        <div class="text-sm text-gray-500 space-x-2">
+                                            <span>{{ $result['year'] ?? 'Ano desconhecido' }}</span>
+                                            @if(isset($result['format']))
+                                                <span>•</span>
+                                                <span>{{ $result['format'][0] ?? 'Format unknown' }}</span>
+                                            @endif
+                                            @if(isset($result['country']))
+                                                <span>•</span>
+                                                <span>{{ $result['country'] }}</span>
+                                            @endif
                                         </div>
                                     </div>
+                                    <a href="{{ route('admin.vinyls.create', ['release_id' => $result['id'], 'query' => $query]) }}"
+                                       class="btn-primary"
+                                       x-data="{ loading: false }"
+                                       @click.prevent="loading = true; window.location.href = $el.href">
+                                        <template x-if="loading">
+                                            <svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                        </template>
+                                        <span x-text="loading ? 'Carregando...' : 'Selecionar'"></span>
+                                    </a>
                                 </div>
-                            @endforeach
-                        </div>
+                            </div>
+                        @endforeach
                     </div>
-                @elseif($query)
-                    <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mt-4" role="alert">
-                        Nenhum resultado encontrado para "{{ $query }}".
-                    </div>
-                @endif
-            </div>
+                </div>
+            @elseif($query)
+                <div class="p-4 mb-4 text-sm text-blue-800 rounded-lg bg-blue-50" role="alert">
+                    Nenhum resultado encontrado para "{{ $query }}".
+                </div>
+            @endif
         </div>
     </div>
 
-    <div x-show="showModal" class="modal modal-open" x-cloak>
-        <div class="modal-box relative z-50">
-            <h3 class="font-bold text-lg" x-text="modalStatus === 'exists' ? 'Disco já cadastrado' : (modalStatus === 'success' ? 'Disco salvo com sucesso!' : 'Erro')"></h3>
-            <p class="py-4" x-text="modalMessage"></p>
-            <div class="modal-action">
+    <!-- Modal -->
+    <x-modal id="result-modal">
+        <div class="p-6">
+            <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4" x-text="modalTitle"></h3>
+            <p class="text-sm text-gray-500 mb-4" x-text="modalMessage"></p>
+
+            <div class="flex justify-end gap-2">
                 <template x-if="modalStatus === 'success'">
-                    <div>
-                        <a :href="completeVinylUrl" class="btn btn-primary">Completar cadastro</a>
-                        <button @click="closeModalAndRedirect" class="btn btn-primary">Voltar para lista de discos</button>
-                        <button @click="closeModal" class="btn btn-error">Fechar</button>
+                    <div class="flex gap-2">
+                        <a :href="completeVinylUrl"
+                           class="btn-primary">
+                            Completar cadastro
+                        </a>
+                        <button @click="closeModalAndRedirect"
+                                class="btn-secondary">
+                            Voltar para lista de discos
+                        </button>
                     </div>
                 </template>
                 <template x-if="modalStatus === 'exists'">
-                    <div>
-                        <button @click="closeModalAndRedirect" class="btn btn-info">Voltar para lista de discos</button>
-                        <button @click="closeModal" class="btn btn-error">Fechar</button>
-                    </div>
+                    <button @click="closeModalAndRedirect"
+                            class="btn-primary">
+                        Voltar para lista de discos
+                    </button>
                 </template>
                 <template x-if="modalStatus === 'error'">
-                    <button @click="closeModal" class="btn btn-error">Fechar</button>
+                    <button @click="closeModal"
+                            class="btn-primary bg-red-600 hover:bg-red-700">
+                        Fechar
+                    </button>
                 </template>
             </div>
         </div>
-    </div>
+    </x-modal>
 </div>
-@endsection
-
-
 
 @push('scripts')
 <script>
@@ -254,60 +319,81 @@ document.addEventListener('alpine:init', () => {
     Alpine.data('vinylManager', () => ({
         loading: false,
         saveLoading: false,
-        showModal: false,
-        savedVinylId: null,
+        modalTitle: '',
         modalMessage: '',
         modalStatus: '',
+        savedVinylId: null,
+
+        init() {
+            // Initialize any required setup
+        },
 
         startSearch() {
             this.loading = true;
+            // The form will handle the actual submission
+            return true;
         },
 
         get completeVinylUrl() {
-            return this.savedVinylId
-                ? '{{ route('admin.vinyls.complete', ['id' => ':id']) }}'.replace(':id', this.savedVinylId)
-                : '#';
+            if (!this.savedVinylId) return '#';
+            const baseUrl = document.querySelector('meta[name="complete-vinyl-url"]')?.content;
+            return baseUrl?.replace(':id', this.savedVinylId) || '#';
         },
 
         async saveVinyl(releaseId) {
             this.saveLoading = true;
             try {
-                const response = await fetch('{{ route('admin.vinyls.store') }}', {
+                const storeUrl = document.querySelector('meta[name="store-vinyl-url"]')?.content;
+                if (!storeUrl) throw new Error('Store URL not found');
+
+                const response = await fetch(storeUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                     },
                     body: JSON.stringify({ release_id: releaseId })
                 });
 
-                const data = await response.json();
-                console.log('Resposta do servidor:', data); // Log para depuração
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Network response was not ok');
+                }
 
+                const data = await response.json();
                 this.savedVinylId = data.vinyl_id;
                 this.modalMessage = data.message;
                 this.modalStatus = data.status;
-                this.showModal = true;
+                this.modalTitle = this.modalStatus === 'exists' ? 'Disco já cadastrado' :
+                                 this.modalStatus === 'success' ? 'Disco salvo com sucesso!' :
+                                 'Erro';
+                window.dispatchEvent(new CustomEvent('open-modal', { detail: 'result-modal' }));
             } catch (error) {
-                console.error('Erro detalhado:', error);
-                this.modalMessage = 'Ocorreu um erro ao processar o disco. Por favor, tente novamente.';
+                console.error('Erro:', error);
+                this.modalMessage = error.message || 'Ocorreu um erro ao processar o disco. Por favor, tente novamente.';
                 this.modalStatus = 'error';
-                this.showModal = true;
+                this.modalTitle = 'Erro';
+                window.dispatchEvent(new CustomEvent('open-modal', { detail: 'result-modal' }));
             } finally {
                 this.saveLoading = false;
             }
         },
 
         closeModal() {
-            this.showModal = false;
+            window.dispatchEvent(new CustomEvent('close-modal'));
         },
 
         closeModalAndRedirect() {
-            this.showModal = false;
-            window.location.href = '{{ route('admin.vinyls.index') }}';
+            const indexUrl = document.querySelector('meta[name="vinyl-index-url"]')?.content;
+            if (indexUrl) {
+                window.dispatchEvent(new CustomEvent('close-modal'));
+                setTimeout(() => {
+                    window.location.href = indexUrl;
+                }, 150);
+            }
         }
     }));
 });
 </script>
 @endpush
-
+@endsection

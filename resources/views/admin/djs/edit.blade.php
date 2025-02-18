@@ -7,6 +7,15 @@
     <form action="{{ route('admin.djs.update', $dj) }}" method="POST" enctype="multipart/form-data" class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
         @csrf
         @method('PUT')
+        @if ($errors->any())
+            <div class="mb-4">
+                <ul class="text-red-600">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
         <div class="mb-4">
             <label for="name" class="block text-gray-700 text-sm font-bold mb-2">Nome</label>
             <input type="text" name="name" id="name" value="{{ $dj->name }}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>

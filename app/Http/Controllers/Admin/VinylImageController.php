@@ -90,15 +90,25 @@ class VinylImageController extends Controller
         return redirect()->route('admin.vinyl.images', $id)->with('error', 'Nenhuma imagem foi enviada.');
     }
     public function destroy($id, $imageId)
-    {
-        $media = Media::findOrFail($imageId);
+{
+    $media = Media::findOrFail($imageId);
 
-        if ($media->mediable_id == $id && $media->mediable_type == VinylMaster::class) {
+    // Verifica se o media pertence ao VinylMaster
+    if ($media->mediable_id == $id && $media->mediable_type == VinylMaster::class) {
+        // Se o arquivo existir, tenta deletá-lo
+        if (Storage::disk('public')->exists($media->file_path)) {
             Storage::disk('public')->delete($media->file_path);
-            $media->delete();
-            return redirect()->route('admin.vinyl.images', $id)->with('success', 'Image deleted successfully.');
+        } else {
+            Log::warning("Arquivo não encontrado: " . $media->file_path);
         }
 
-        return redirect()->route('admin.vinyl.images', $id)->with('error', 'Unable to delete the image.');
+        $media->delete();
+        return redirect()->route('admin.vinyl.images', $id)
+                         ->with('success', 'Imagem excluída com sucesso.');
     }
+
+    return redirect()->route('admin.vinyl.images', $id)
+                     ->with('error', 'Não foi possível excluir a imagem.');
+}
+
 }

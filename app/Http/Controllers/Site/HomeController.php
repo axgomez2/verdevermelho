@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Site;
 
 use App\Http\Controllers\Controller;
-use App\Models\DJ;
+use App\Models\Deejay;
 use App\Models\VinylMaster;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -32,11 +32,11 @@ class HomeController extends Controller
         ->whereHas('vinylSec')
         ->whereHas('product')
         ->latest()
-        ->take(8)
+        ->take(30)
         ->get();
 
     // DJs ativos
-    $featuredDjs = DJ::where('is_active', true)->withCount('recommendations')->take(3)->get();
+    $featuredDjs = Deejay::where('is_active', true)->withCount('recommendations')->take(3)->get();
 
     // Passamos todas essas informações para a view
     return view('site.index', compact(

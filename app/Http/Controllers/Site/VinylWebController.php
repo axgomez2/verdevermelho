@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Site;
 
 use App\Http\Controllers\Controller;
+use App\Models\CatStyleShop;
 use App\Models\VinylMaster;
 use App\Models\Style;
 use App\Models\VinylSec;
@@ -93,5 +94,18 @@ class VinylWebController extends Controller
         }
 
         return $query;
+    }
+
+    public function byCategory(Request $request, $slug)
+    {
+        // Busca a categoria pelo slug
+        $category = CatStyleShop::where('slug', $slug)->firstOrFail();
+
+        // Filtra os VinylMasters que possuem VinylSec associado à categoria
+        $vinyls = VinylMaster::whereHas('vinylSec.categories', function($q) use ($slug) {
+            $q->where('slug', $slug);
+        })->paginate(20);
+
+        return view('site.vinyls.index', compact('vinyls', 'category'));
     }
 }

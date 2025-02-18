@@ -29,6 +29,11 @@
                         <img src="{{ asset('storage/' . $dj->image) }}" alt="{{ $dj->name }}" class="w-32 h-32 object-cover">
                     </dd>
                 </div>
+                @else
+                <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                    <dt class="text-sm font-medium text-gray-500">Imagem</dt>
+                    <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">Nenhuma imagem disponível.</dd>
+                </div>
                 @endif
             </dl>
         </div>
@@ -36,13 +41,12 @@
 
     <h2 class="text-xl font-semibold text-gray-900 mb-4">Recomendações de Discos</h2>
 
-    <div class="bg-white shadow overflow-hidden sm:rounde<cut_off_point>
-Discos</h2>
-
-    <div class="bg-white shadow overflow-hidden sm:rounde
-</cut_off_point>
-
-d-lg mb-6">
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
+        @if($recommendations->isEmpty())
+            <div class="px-4 py-5">
+                <p class="text-gray-500">Nenhuma recomendação disponível.</p>
+            </div>
+        @else
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
@@ -73,6 +77,7 @@ d-lg mb-6">
                 @endforeach
             </tbody>
         </table>
+        @endif
     </div>
 
     <div class="mt-4">

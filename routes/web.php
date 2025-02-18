@@ -1,9 +1,10 @@
 <?php
 
-
-
+use App\Http\Controllers\Admin\EquipmentController;
+use App\Http\Controllers\Admin\PlaylistController as AdminPlaylistController;
 use App\Http\Controllers\Pdv\PainelController;
 use App\Http\Controllers\Site\AboutController;
+use App\Http\Controllers\Site\PlaylistController;
 use App\Http\Controllers\Site\DjChartController;
 use App\Http\Controllers\Site\RecommendationController;
 use App\Http\Controllers\Site\WantlistController;
@@ -15,7 +16,6 @@ use App\Http\Controllers\Site\HomeController;
 use App\Http\Controllers\Site\SearchController;
 use App\Http\Controllers\Site\VinylWebController;
 use App\Http\Controllers\Site\VinylDetailsController;
-use App\Http\Controllers\Site\EquipmentController;
 use App\Http\Controllers\Site\WishlistController;
 use App\Http\Controllers\Site\CartController;
 use App\Http\Controllers\Site\CartItemController;
@@ -35,27 +35,33 @@ use App\Http\Controllers\Admin\TrackController;
 // open use
 use App\Http\Controllers\ProfileController;
 
-Route::get('/', function () {
-    return view('layouts.guest');
-})->name('preload');
-
-// rotas privadas do site
+// Rotas para o Navbar
+Route::prefix('navbar')->group(function () {
+    Route::get('/data', [NavbarController::class, 'getNavbarData']);
+    Route::get('/cart-preview', [NavbarController::class, 'getCartPreview']);
+});
 
 Route::middleware(['auth', 'verified', 'rolemanager:user'])->group(function () {
-
     Route::get('/favoritos', [WishlistController::class, 'index'])->name('site.wishlist.index');
     Route::post('/favoritos/toggle', [WishlistController::class, 'toggle'])->name('site.wishlist.toggle');
 
-    // Rotas do carrinho
-    Route::get('/carrinho', [CartController::class, 'index'])->name('site.cart.index');
-    Route::post('/carrinho', [CartController::class, 'store'])->name('site.cart.store');
-    Route::put('/carrinho/{cart}', [CartController::class, 'update'])->name('site.cart.update');
-    Route::delete('/carrinho/{cart}', [CartController::class, 'destroy'])->name('site.cart.destroy');
+
+
+    Route::prefix('carrinho')->group(function () {
+        Route::get('/', [CartController::class, 'index'])->name('site.cart.index');
+        Route::post('/add', [CartController::class, 'addToCart'])->name('site.cart.add');
+        Route::post('/update/{itemId}', [CartController::class, 'updateQuantity'])->name('site.cart.update');
+        Route::delete('/remove/{itemId}', [CartController::class, 'removeItem'])->name('site.cart.remove');
+    });
+
+
 
     // Rotas dos itens do carrinho
     Route::post('/carrinho/items', [CartItemController::class, 'store'])->name('site.cart.items.store');
     Route::put('/carrinho/items/{cartItem}', [CartItemController::class, 'update'])->name('site.cart.items.update');
     Route::delete('/cart/items/{cartItem}', [CartItemController::class, 'destroy'])->name('site.cart.items.destroy');
+    Route::post('/cart/update-postal-code', [\App\Http\Controllers\Site\CartController::class, 'updatePostalCode'])
+    ->name('site.cart.updatePostalCode');
 
     //  Rotas de wantlist
     Route::get('/wantlist', [WantlistController::class, 'index'])->name('site.wantlist.index');
@@ -63,23 +69,30 @@ Route::middleware(['auth', 'verified', 'rolemanager:user'])->group(function () {
     //rotas de checkout
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('site.checkout.index');
     Route::post('/checkout', [CheckoutController::class, 'process'])->name('site.checkout.process');
-
 });
 
 // admin
-
 Route::middleware(['auth', 'verified', 'rolemanager:admin'])->group(function () {
     Route::prefix('admin')->group(function () {
         Route::get('/', [DashboardController::class, 'index'])->name('admin.dashboard');
+
+        // Playlist Management
+        Route::resource('playlists', AdminPlaylistController::class)->names([
+            'index' => 'admin.playlists.index',
+            'create' => 'admin.playlists.create',
+            'store' => 'admin.playlists.store',
+            'edit' => 'admin.playlists.edit',
+            'update' => 'admin.playlists.update',
+            'destroy' => 'admin.playlists.destroy',
+        ]);
+        Route::post('playlists/{playlist}/reorder', [AdminPlaylistController::class, 'reorderTracks'])
+            ->name('admin.playlists.reorder');
+            Route::get('vinyls/search', [\App\Http\Controllers\Admin\PlaylistController::class, 'searchVinyls'])
+    ->name('admin.vinyls.search');
+
         // vinyls route
         Route::get('/discos', [VinylController::class, 'index'])->name('admin.vinyls.index');
-
-        Route::get('/discos/adicionar', [VinylController::class, 'create'])->name('admin.vinyls.create');
-        Route::post('/discos/salvar', [VinylController::class, 'store'])->name('admin.vinyls.store');
-        Route::get('/disco/{id}', [VinylController::class, 'show'])->name('admin.vinyls.show');
-        Route::get('/disco/{id}/edit', [VinylController::class, 'edit'])->name('admin.vinyls.edit');
-        Route::put('/disco/{id}', [VinylController::class, 'update'])->name('admin.vinyls.update');
-
+        Route::get('/discos/search', [VinylController::class, 'search'])->name('admin.vinyls.search');
         Route::get('/disco/{id}/completar', [VinylController::class, 'complete'])->name('admin.vinyls.complete');
         Route::post('/disco/{id}/completar', [VinylController::class, 'storeComplete'])->name('admin.vinyl.storeComplete');
         Route::delete('/disco/{id}', [VinylController::class, 'destroy'])->name('admin.vinyls.destroy');
@@ -89,21 +102,31 @@ Route::middleware(['auth', 'verified', 'rolemanager:admin'])->group(function () 
         Route::delete('/disco/{id}/images/{imageId}', [VinylImageController::class, 'destroy'])->name('admin.vinyl.images.destroy');
         Route::post('/vinyls/update-field', [VinylController::class, 'updateField'])->name('admin.vinyls.updateField');
 
-
         Route::post('/vinyls/{id}/fetch-discogs-image', [VinylController::class, 'fetchDiscogsImage'])->name('admin.vinyls.fetch-discogs-image');
         Route::post('/vinyls/{id}/upload-image', [VinylController::class, 'uploadImage'])->name('admin.vinyls.upload-image');
         Route::delete('/vinyls/{id}/remove-image', [VinylController::class, 'removeImage'])->name('admin.vinyls.remove-image');
-
 
         //faixas
         Route::get('/disco/{id}/edit-tracks', [TrackController::class, 'editTracks'])->name('admin.vinyls.edit-tracks');
         Route::put('/disco/{id}/update-tracks', [TrackController::class, 'updateTracks'])->name('admin.vinyls.update-tracks');
         Route::post('/youtube/search', [YouTubeController::class, 'search'])->name('youtube.search');
 
-        // settings routes
+        // equipments route
+        Route::get('/equipamentos', [EquipmentController::class, 'index'])->name('admin.equipments.index');
+        Route::get('/equipamentos/adicionar', [EquipmentController::class, 'create'])->name('admin.equipments.create');
+        Route::post('/equipamentos', [EquipmentController::class, 'store'])->name('admin.equipments.store');
+        Route::get('/equipamentos/{id}/edit', [EquipmentController::class, 'edit'])->name('admin.equipments.edit');
+        Route::put('/equipamentos/{id}', [EquipmentController::class, 'update'])->name('admin.equipments.update');
+        Route::delete('/equipamentos/{id}', [EquipmentController::class, 'destroy'])->name('admin.equipments.destroy');
 
+        Route::get('/discos/adicionar', [VinylController::class, 'create'])->name('admin.vinyls.create');
+        Route::post('/discos/salvar', [VinylController::class, 'store'])->name('admin.vinyls.store');
+        Route::get('/disco/{id}', [VinylController::class, 'show'])->name('admin.vinyls.show');
+        Route::get('/disco/{id}/edit', [VinylController::class, 'edit'])->name('admin.vinyls.edit');
+        Route::put('/disco/{id}', [VinylController::class, 'update'])->name('admin.vinyls.update');
+
+        // settings routes
         Route::get('/configuracoes', [SettingsController::class, 'index'])->name('admin.settings.index');
-        // Categorias internas
 
         // Categorias internas
         Route::get('categorias-estilo', [CatStyleShopController::class, 'index'])->name('admin.cat-style-shop.index');
@@ -114,7 +137,6 @@ Route::middleware(['auth', 'verified', 'rolemanager:admin'])->group(function () 
         Route::delete('categorias-estilo/{catStyleShop}', [CatStyleShopController::class, 'destroy'])->name('admin.cat-style-shop.destroy');
 
         // djs
-
         Route::get('djs', [DJController::class, 'index'])->name('admin.djs.index');
         Route::get('djs/adicionar', [DJController::class, 'create'])->name('admin.djs.create');
         Route::post('djs', [DJController::class, 'store'])->name('admin.djs.store');
@@ -161,9 +183,6 @@ Route::middleware('auth')->group(function () {
     Route::patch('/meu-perfil', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/meu-perfil', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::post('/profile/address', [ProfileController::class, 'storeAddress'])->name('address.store');
-
-
-
 });
 
 Route::middleware(['auth', 'verified', 'rolemanager:resale'])->group(function () {
@@ -172,25 +191,27 @@ Route::middleware(['auth', 'verified', 'rolemanager:resale'])->group(function ()
     });
 });
 
-// Route::get('/', [HomeController::class, 'index'])->name('site.home');
-
+// Site Routes
+Route::get('/', [HomeController::class, 'index'])->name('site.home');
 Route::get('/discos', [VinylWebController::class, 'index'])->name('site.vinyls.index');
 Route::get('/{artistSlug}/{titleSlug}', [VinylDetailsController::class, 'show'])->name('site.vinyl.show');
-
-Route::get('/busca', [SearchController::class, 'index'])->name('search');
-
+Route::get('/busca', [SearchController::class, 'index'])->name('site.search');
 Route::get('/djcharts', [ChartDjsController::class, 'index'])->name('site.djcharts.index');
 Route::get('/djcharts/{dj:slug}', [ChartDjsController::class, 'show'])->name('site.djcharts.show');
-
-
 Route::get('/equipamentos', [EquipmentController::class, 'index'])->name('site.equipments.index');
 Route::get('/equipamentos/{slug}', [EquipmentController::class, 'show'])->name('site.equipments.show');
-
 Route::get('/sobre-a-loja', [AboutController::class, 'index'])->name('site.about');
 
 
 
+Route::get('/discos/categoria/{slug}', [VinylWebController::class, 'byCategory'])->name('vinyls.byCategory');
 
 
+// Playlist Routes
+Route::get('/playlists', [PlaylistController::class, 'index'])->name('site.playlists.index');
+Route::get('/playlists/{slug}', [PlaylistController::class, 'show'])->name('site.playlists.show');
+Route::get('/playlists/{slug}/tracks', [PlaylistController::class, 'getPlaylistTracks'])->name('site.playlists.tracks');
+
+Route::post('/address/store', [AddressController::class, 'store'])->name('address.store');
 
 require __DIR__.'/auth.php';

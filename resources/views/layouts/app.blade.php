@@ -67,10 +67,12 @@
 
 
 <body>
-    @include('components.site.navbar3')
+    <div class="bg-slate-200">
+        @include('components.site.nav4')
+    </div>
     <!-- Page Content -->
-    <main class="mt-8 md:mt-12 p-4">
-        <div class="mx-auto">
+    <main class=" p-4 bg-gray-200">
+        <div >
             {{ $slot }}
         </div>
       </main>
@@ -92,6 +94,9 @@
     <script src="{{ asset('assets/js/cart.js') }}"></script>
     <script src="{{ asset('assets/js/wantlist.js') }}"></script>
     <script src="{{ asset('assets/js/toast.js') }}" type="module"></script>
+
+    <script src="https://unpkg.com/flowbite@1.6.6/dist/flowbite.js"></script>
+
 
 
     @stack('scripts')

@@ -1,123 +1,212 @@
-{{--
 <x-app-layout>
-    @extends('layouts.app')
+    <section class="bg-white py-8 antialiased md:py-16">
+        <div class="mx-auto max-w-screen-xl px-4 2xl:px-0">
+            <h2 class="text-xl font-semibold text-gray-900 sm:text-2xl">Shopping Cart</h2>
 
-    @section('content')
-    <div class="container mx-auto px-4 py-8">
-        <h1 class="text-3xl font-bold mb-8">Seu Carrinho</h1>
+            <div class="mt-6 sm:mt-8 md:gap-6 lg:flex lg:items-start xl:gap-8">
+                <div class="mx-auto w-full flex-none lg:max-w-2xl xl:max-w-4xl">
+                    <div class="space-y-6">
+                        @foreach($cart->items as $item)
+                            <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm md:p-6">
+                                <div class="space-y-4 md:flex md:items-center md:justify-between md:gap-6 md:space-y-0">
+                                    <a href="#" class="shrink-0 md:order-1">
+                                        <img class="h-20 w-20 object-cover" src="{{ $item->product->productable->vinylSec->cover_image ?? asset('images/placeholder.jpg') }}" alt="{{ $item->product->productable->title }}">
+                                    </a>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div class="md:col-span-2">
-                <div id="cart-items" class="space-y-4">
-                    <!-- Os itens do carrinho serão inseridos aqui via JavaScript -->
+                                    <label for="counter-input-{{ $item->id }}" class="sr-only">Choose quantity:</label>
+                                    <div class="flex items-center justify-between md:order-3 md:justify-end">
+                                        <div class="flex items-center">
+                                            <button type="button" data-item-id="{{ $item->id }}" class="decrement-button inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-gray-300 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-100">
+                                                <svg class="h-2.5 w-2.5 text-gray-900" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 2">
+                                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 1h16" />
+                                                </svg>
+                                            </button>
+                                            <input type="text" id="counter-input-{{ $item->id }}" data-item-id="{{ $item->id }}" class="quantity-input w-10 shrink-0 border-0 bg-transparent text-center text-sm font-medium text-gray-900 focus:outline-none focus:ring-0" value="{{ $item->quantity }}" required />
+                                            <button type="button" data-item-id="{{ $item->id }}" class="increment-button inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-gray-300 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-100">
+                                                <svg class="h-2.5 w-2.5 text-gray-900" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
+                                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 1v16M1 9h16" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                        <div class="text-end md:order-4 md:w-32">
+                                            <p class="text-base font-bold text-gray-900">R$ {{ number_format($item->product->price * $item->quantity, 2, ',', '.') }}</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="w-full min-w-0 flex-1 space-y-4 md:order-2 md:max-w-md">
+                                        <a href="#" class="text-base font-medium text-gray-900 hover:underline">{{ $item->product->productable->title }}</a>
+
+                                        <div class="flex items-center gap-4">
+                                            <form action="{{ route('site.cart.items.destroy', $item->id) }}" method="POST">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="inline-flex items-center text-sm font-medium text-red-600 hover:underline">
+                                                    Remove
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
                 </div>
-            </div>
 
-            <div class="md:col-span-1">
-                <div class="bg-white shadow-md rounded-lg p-6">
-                    <h2 class="text-xl font-semibold mb-4">Resumo do Pedido</h2>
-                    <div class="flex justify-between mb-2">
-                        <span>Subtotal:</span>
-                        <span id="subtotal">R$ 0,00</span>
+                <div class="mx-auto mt-6 max-w-4xl flex-1 space-y-6 lg:mt-0 lg:w-full">
+                    <div class="space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
+                        <p class="text-xl font-semibold text-gray-900">Order summary</p>
+
+                        <div class="space-y-4">
+                            <div class="space-y-2">
+                                <dl class="flex items-center justify-between gap-4">
+                                    <dt class="text-base font-normal text-gray-500">Subtotal</dt>
+                                    <dd class="text-base font-medium text-gray-900">R$ {{ number_format($subtotal, 2, ',', '.') }}</dd>
+                                </dl>
+
+                                <dl class="flex items-center justify-between gap-4">
+                                    <dt class="text-base font-normal text-gray-500">Shipping</dt>
+                                    <dd class="text-base font-medium text-gray-900">
+                                        @if($address || session('shipping_postal_code'))
+                                            @php
+                                                if ($address) {
+                                                    if (is_object($address)) {
+                                                        $postalCode = trim($address->zip_code);
+                                                    } else {
+                                                        $postalCode = trim($address);
+                                                    }
+                                                } else {
+                                                    $postalCode = session('shipping_postal_code');
+                                                }
+                                            @endphp
+
+                                            @if(isset($shippingOptions) && count($shippingOptions) > 0)
+                                                <select name="shipping_option" id="shipping_option" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                                    @foreach($shippingOptions as $option)
+                                                        <option value="{{ $option['id'] }}">
+                                                            {{ $option['name'] }} - R$ {{ number_format($option['price'], 2, ',', '.') }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                            @else
+                                                R$ {{ number_format($shipping, 2, ',', '.') }}
+                                            @endif
+
+                                            <p class="mt-2 text-sm text-gray-600">
+                                                Entrega para:
+                                                @if(is_object($address))
+                                                    {{ $address->street }}, {{ $address->number }} - {{ $address->city }}/{{ $address->state }}
+                                                @else
+                                                    CEP: {{ $postalCode }}
+                                                @endif
+                                            </p>
+                                        @else
+                                            <button type="button" onclick="openAddressModal()" class="text-blue-600 hover:underline">
+                                                Adicionar endereço para calcular frete
+                                            </button>
+                                        @endif
+                                    </dd>
+                                </dl>
+
+                                <dl class="flex items-center justify-between gap-4">
+                                    <dt class="text-base font-normal text-gray-500">Tax</dt>
+                                    <dd class="text-base font-medium text-gray-900">R$ {{ number_format($tax, 2, ',', '.') }}</dd>
+                                </dl>
+                            </div>
+
+                            <dl class="flex items-center justify-between gap-4 border-t border-gray-200 pt-2">
+                                <dt class="text-base font-bold text-gray-900">Total</dt>
+                                <dd class="text-base font-bold text-gray-900">R$ {{ number_format($total, 2, ',', '.') }}</dd>
+                            </dl>
+                        </div>
+
+                        <a href="{{ route('site.checkout.index') }}" class="flex w-full items-center justify-center rounded-lg bg-primary-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-800 focus:outline-none focus:ring-4 focus:ring-primary-300">
+                            Proceed to Checkout
+                        </a>
+
+                        <div class="flex items-center justify-center gap-2">
+                            <span class="text-sm font-normal text-gray-500"> or </span>
+                            <a href="{{ route('site.home') }}" class="inline-flex items-center gap-2 text-sm font-medium text-primary-700 underline hover:no-underline">
+                                Continue Shopping
+                                <svg class="h-5 w-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 12H5m14 0-4 4m4-4-4-4" />
+                                </svg>
+                            </a>
+                        </div>
                     </div>
-                    <div class="flex justify-between mb-4">
-                        <span>Frete:</span>
-                        <span id="shipping">R$ 0,00</span>
+
+                    <div class="space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
+                        <form class="space-y-4" action="{{ route('site.cart.updatePostalCode') }}" method="POST">
+                            @csrf
+                            <div>
+                                <label for="postal_code" class="mb-2 block text-sm font-medium text-gray-900">Digite seu CEP</label>
+                                <input type="text" id="postal_code" name="postal_code" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-primary-500" placeholder="00000000" required />
+                            </div>
+                            <button type="submit" class="flex w-full items-center justify-center rounded-lg bg-primary-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-800 focus:outline-none focus:ring-4 focus:ring-primary-300">
+                                Calcular Frete
+                            </button>
+                        </form>
                     </div>
-                    <div class="flex justify-between font-bold text-lg">
-                        <span>Total:</span>
-                        <span id="total">R$ 0,00</span>
-                    </div>
-                    <button id="checkout-button" class="btn btn-primary w-full mt-6">Finalizar Compra</button>
                 </div>
             </div>
         </div>
-    </div>
-
-    @endsection
+        @include('profile.partials.address-modal')
+    </section>
 
     @push('scripts')
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const cartItems = [
-            // Exemplo de itens no carrinho. Na prática, isso viria do backend.
-            { id: 1, name: "Vinyl 1", price: 50.00, quantity: 1, image: "/placeholder.svg" },
-            { id: 2, name: "Vinyl 2", price: 75.00, quantity: 2, image: "/placeholder.svg" },
-        ];
+        document.addEventListener('DOMContentLoaded', function() {
+            const quantityInputs = document.querySelectorAll('.quantity-input');
+            const incrementButtons = document.querySelectorAll('.increment-button');
+            const decrementButtons = document.querySelectorAll('.decrement-button');
 
-        const cartItemsContainer = document.getElementById('cart-items');
-        const subtotalElement = document.getElementById('subtotal');
-        const shippingElement = document.getElementById('shipping');
-        const totalElement = document.getElementById('total');
-        const checkoutButton = document.getElementById('checkout-button');
+            function updateQuantity(itemId, newQuantity) {
+                fetch(`/cart/update/${itemId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({ quantity: newQuantity })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.reload();
+                    }
+                });
+            }
 
-        function renderCartItems() {
-            cartItemsContainer.innerHTML = '';
-            let subtotal = 0;
-
-            cartItems.forEach(item => {
-                const itemTotal = item.price * item.quantity;
-                subtotal += itemTotal;
-
-                const itemElement = document.createElement('div');
-                itemElement.className = 'flex items-center bg-white p-4 shadow rounded-lg';
-                itemElement.innerHTML = `
-                    <img src="${item.image}" alt="${item.name}" class="w-20 h-20 object-cover rounded mr-4">
-                    <div class="flex-grow">
-                        <h3 class="font-semibold">${item.name}</h3>
-                        <p class="text-gray-600">R$ ${item.price.toFixed(2)}</p>
-                        <div class="flex items-center mt-2">
-                            <button class="btn btn-sm btn-outline" onclick="updateQuantity(${item.id}, ${item.quantity - 1})">-</button>
-                            <span class="mx-2">${item.quantity}</span>
-                            <button class="btn btn-sm btn-outline" onclick="updateQuantity(${item.id}, ${item.quantity + 1})">+</button>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <p class="font-semibold">R$ ${itemTotal.toFixed(2)}</p>
-                        <button class="btn btn-sm btn-error mt-2" onclick="removeItem(${item.id})">Remover</button>
-                    </div>
-                `;
-                cartItemsContainer.appendChild(itemElement);
+            quantityInputs.forEach(input => {
+                input.addEventListener('change', function() {
+                    const itemId = this.dataset.itemId;
+                    const newQuantity = parseInt(this.value);
+                    if (newQuantity > 0) {
+                        updateQuantity(itemId, newQuantity);
+                    }
+                });
             });
 
-            const shipping = 10.00; // Valor fixo de frete para este exemplo
-            const total = subtotal + shipping;
+            incrementButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const itemId = this.dataset.itemId;
+                    const input = document.querySelector(`#counter-input-${itemId}`);
+                    const newQuantity = parseInt(input.value) + 1;
+                    input.value = newQuantity;
+                    updateQuantity(itemId, newQuantity);
+                });
+            });
 
-            subtotalElement.textContent = `R$ ${subtotal.toFixed(2)}`;
-            shippingElement.textContent = `R$ ${shipping.toFixed(2)}`;
-            totalElement.textContent = `R$ ${total.toFixed(2)}`;
-        }
-
-        function updateQuantity(itemId, newQuantity) {
-            const item = cartItems.find(item => item.id === itemId);
-            if (item) {
-                item.quantity = Math.max(0, newQuantity);
-                if (item.quantity === 0) {
-                    removeItem(itemId);
-                } else {
-                    renderCartItems();
-                }
-            }
-        }
-
-        function removeItem(itemId) {
-            const index = cartItems.findIndex(item => item.id === itemId);
-            if (index !== -1) {
-                cartItems.splice(index, 1);
-                renderCartItems();
-            }
-        }
-
-        checkoutButton.addEventListener('click', function() {
-            // Salvar informações do carrinho no localStorage
-            localStorage.setItem('cartItems', JSON.stringify(cartItems));
-
-            // Redirecionar para a página de verificação de email
-            window.location.href = '{{ route('site.checkout.email') }}';
+            decrementButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const itemId = this.dataset.itemId;
+                    const input = document.querySelector(`#counter-input-${itemId}`);
+                    const newQuantity = Math.max(1, parseInt(input.value) - 1);
+                    input.value = newQuantity;
+                    updateQuantity(itemId, newQuantity);
+                });
+            });
         });
-
-        renderCartItems();
-    });
     </script>
     @endpush
-</x-app-layout> --}}
+</x-app-layout>
+

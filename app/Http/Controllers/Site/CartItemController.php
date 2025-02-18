@@ -95,9 +95,9 @@ class CartItemController extends Controller
     public function destroy(CartItem $cartItem)
     {
         $cartItem->delete();
-
-        return redirect()->route('site.cart.index')->with('success', 'Item removido do carrinho.');
+        return redirect()->route('site.cart.index')->with('success', 'Item removed from cart.');
     }
+
 
     public function checkStock(Request $request)
     {

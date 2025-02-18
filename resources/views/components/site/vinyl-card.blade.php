@@ -1,4 +1,4 @@
-<div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 group h-full">
+<div class="card bg-base-100  hover:shadow-2xl transition-all duration-300 group h-full mx-3 mt-4 ">
     <figure class="relative aspect-square overflow-hidden">
         <img
             src="{{ asset('storage/' . $vinyl->cover_image) }}"
@@ -46,19 +46,18 @@
                 <i class="fas fa-heart {{ $vinyl->inWishlist() ? 'text-red-500' : 'text-gray-400' }}"></i>
             </button>
         </div>
-        <div class="card-actions justify-end mt-2">
+        <div class="card-actions justify-center mt-2 ">
             <button
-                type="button"
-                class="btn btn-primary btn-sm w-full add-to-cart-button"
-                data-product-id="{{ $vinyl->product->id }}"
-                data-quantity="1"
-                {{ $vinyl->vinylSec->quantity > 0 ? '' : 'disabled' }}
-            >
-                <i class="fas fa-shopping-cart mr-1 text-xs"></i>
-                <span class="add-to-cart-text text-xs">
-                    {{ $vinyl->vinylSec->quantity > 0 ? 'Adicionar ao Carrinho' : 'Indisponível' }}
-                </span>
-            </button>
+            type="button"
+            class="btn btn-outline add-to-cart-button"
+            data-product-id="{{ $vinyl->product->id }}"
+            data-quantity="1"
+            {{ $vinyl->vinylSec->quantity > 0 ? '' : 'disabled' }}
+        >
+        <span class="add-to-cart-text text-sm whitespace-normal">
+            {{ $vinyl->vinylSec->quantity > 0 ? 'Adicionar ao Carrinho' : 'Indisponível' }}
+        </span>
+        </button>
         </div>
     </div>
 </div>

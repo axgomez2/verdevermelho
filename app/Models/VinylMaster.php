@@ -129,9 +129,21 @@ class VinylMaster extends Model
         return $this->hasMany(CartItem::class, 'product_id');
     }
 
-    public function catStyleShop()
+    public function catStyleShops()
     {
-        return $this->belongsTo(CatStyleShop::class);
+        return $this->belongsToMany(CatStyleShop::class, 'cat_style_shop_vinyl_master', 'vinyl_master_id', 'cat_style_shop_id');
     }
 
+    public function playlistTracks()
+    {
+        return $this->hasMany(PlaylistTrack::class);
+    }
+
+    public function playlists()
+    {
+        return $this->belongsToMany(Playlist::class, 'playlist_tracks')
+                    ->withPivot(['position', 'trackable_type', 'trackable_id'])
+                    ->orderBy('playlist_tracks.position')
+                    ->withTimestamps();
+    }
 }
