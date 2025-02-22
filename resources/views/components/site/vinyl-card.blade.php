@@ -50,7 +50,6 @@
                     'coverUrl' => asset('storage/' . $vinyl->cover_image),
                     'vinylTitle' => $vinyl->title
                 ]) }}"
-                onclick="{{ $hasPlayableTracks ? 'initializeCardPlayer(this)' : '' }}"
                 {{ $hasPlayableTracks ? '' : 'disabled' }}
                 title="{{ $hasPlayableTracks ? 'Reproduzir' : 'Áudio não disponível' }}"
             >
@@ -200,3 +199,48 @@
     </div>
 </div>
 
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Adiciona eventos aos botões de play
+    document.querySelectorAll('.play-button').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (this.disabled) return;
+
+            try {
+                const vinylData = JSON.parse(this.dataset.vinylInfo);
+                if (!vinylData?.tracks?.length) {
+                    throw new Error('Dados do vinyl inválidos');
+                }
+
+                // Formata as tracks para o player
+                const tracks = vinylData.tracks
+                    .filter(track => track.youtube_url)
+                    .map(track => ({
+                        id: track.id,
+                        name: track.name,
+                        artist: vinylData.artist,
+                        youtube_url: track.youtube_url,
+                        cover_url: vinylData.coverUrl
+                    }));
+
+                if (!tracks.length) {
+                    throw new Error('Nenhuma faixa disponível para reprodução');
+                }
+
+                // Carrega a playlist no player
+                if (window.audioPlayer) {
+                    window.audioPlayer.loadPlaylist(tracks);
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                if (window.audioPlayer) {
+                    window.audioPlayer.showError(error.message);
+                }
+            }
+        });
+    });
+});
+</script>
+@endpush

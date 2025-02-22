@@ -1,176 +1,435 @@
-// Classe base do AudioPlayer com funcionalidades universais
-class AudioPlayer {
+window.AudioPlayer = class AudioPlayer {
     constructor() {
-      this.player = null
-      this.currentTrack = null
-      this.playlist = []
-      this.currentIndex = 0
-      this.isReady = false
-      this.progressInterval = null
-      this.onYouTubeIframeAPIReady = this.onYouTubeIframeAPIReady.bind(this)
+        // Estado inicial
+        this.state = {
+            initialized: false,
+            loading: false,
+            playing: false,
+            volume: 100,
+            muted: false
+        };
 
-      this.initializationTimeout = setTimeout(() => {
-        if (!this.isReady) {
-          console.error("Player failed to initialize after 10 seconds")
-          this.handleInitializationError()
+        // Player e playlist
+        this.player = null;
+        this.playlist = [];
+        this.currentTrack = null;
+        this.currentIndex = 0;
+
+        // Cache dos elementos DOM
+        this.elements = this.getPlayerElements();
+
+        // Configuração do player do YouTube
+        this.playerConfig = {
+            height: '0',
+            width: '0',
+            playerVars: {
+                autoplay: 0,
+                controls: 0,
+                disablekb: 1,
+                enablejsapi: 1,
+                iv_load_policy: 3,
+                modestbranding: 1,
+                playsinline: 1,
+                rel: 0,
+                showinfo: 0,
+                origin: window.location.origin
+            },
+            events: {
+                onReady: this.handlePlayerReady.bind(this),
+                onStateChange: this.handlePlayerStateChange.bind(this),
+                onError: this.handlePlayerError.bind(this)
+            }
+        };
+
+        // Inicializa o player
+        this.init();
+    }
+
+    // Inicialização
+    async init() {
+        try {
+            if (this.state.initialized || this.state.loading) return;
+            this.state.loading = true;
+
+            // Carrega a API do YouTube se necessário
+            await this.loadYouTubeAPI();
+
+            // Cria o player
+            await this.createPlayer();
+
+            // Configura eventos
+            this.setupEventListeners();
+
+            this.state.initialized = true;
+            console.log('Player inicializado com sucesso');
+        } catch (error) {
+            console.error('Erro na inicialização do player:', error);
+            this.showError('Erro ao inicializar o player. Tente recarregar a página.');
+        } finally {
+            this.state.loading = false;
         }
-      }, 10000)
-
-      this.initializeYouTubeAPI()
     }
 
-    initializeYouTubeAPI() {
-      if (!window.YT) {
-        const tag = document.createElement("script")
-        tag.src = "https://www.youtube.com/iframe_api"
-        const firstScriptTag = document.getElementsByTagName("script")[0]
-        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag)
+    // Carrega a API do YouTube
+    loadYouTubeAPI() {
+        return new Promise((resolve, reject) => {
+            if (window.YT && window.YT.Player) {
+                resolve();
+                return;
+            }
 
-        window.onYouTubeIframeAPIReady = () => {
-          console.log("YouTube API is ready")
-          this.onYouTubeIframeAPIReady()
+            // Callback global para quando a API carregar
+            window.onYouTubeIframeAPIReady = () => {
+                console.log('API do YouTube carregada');
+                resolve();
+            };
+
+            // Carrega o script da API
+            const tag = document.createElement('script');
+            tag.src = 'https://www.youtube.com/iframe_api';
+            tag.onerror = () => reject(new Error('Falha ao carregar API do YouTube'));
+            document.head.appendChild(tag);
+
+            // Timeout de 10 segundos
+            setTimeout(() => reject(new Error('Timeout ao carregar API do YouTube')), 10000);
+        });
+    }
+
+    // Cria o player do YouTube
+    createPlayer() {
+        return new Promise((resolve, reject) => {
+            try {
+                if (!this.elements.youtubePlayer) {
+                    console.error('Elemento do player não encontrado');
+                    reject(new Error('Elemento do player não encontrado'));
+                    return;
+                }
+
+                this.player = new YT.Player('youtube-player', {
+                    ...this.playerConfig,
+                    events: {
+                        ...this.playerConfig.events,
+                        onReady: () => {
+                            console.log('Player do YouTube pronto');
+                            resolve();
+                        },
+                        onError: (error) => {
+                            console.error('Erro no player do YouTube:', error);
+                            reject(error);
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Erro ao criar player:', error);
+                reject(error);
+            }
+        });
+    }
+
+    // Configura os event listeners
+    setupEventListeners() {
+        // Play/Pause
+        this.elements.playPauseBtn?.addEventListener('click', () => this.togglePlay());
+
+        // Próxima/Anterior
+        this.elements.prevBtn?.addEventListener('click', () => this.playPrevious());
+        this.elements.nextBtn?.addEventListener('click', () => this.playNext());
+
+        // Volume
+        this.elements.volumeControl?.addEventListener('input', (e) => {
+            this.setVolume(parseInt(e.target.value, 10));
+        });
+
+        // Progresso
+        this.elements.progressContainer?.addEventListener('click', (e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const ratio = (e.clientX - rect.left) / rect.width;
+            this.seekTo(ratio);
+        });
+    }
+
+    // Handlers dos eventos do player
+    handlePlayerReady(event) {
+        console.log('Player pronto para uso');
+        this.player = event.target;
+        this.setVolume(this.state.volume);
+        this.startProgressUpdate();
+    }
+
+    handlePlayerStateChange(event) {
+        if (!event || !YT) return;
+
+        switch (event.data) {
+            case YT.PlayerState.ENDED:
+                this.playNext();
+                break;
+            case YT.PlayerState.PLAYING:
+                this.state.playing = true;
+                this.updatePlayPauseButton();
+                this.startProgressUpdate();
+                break;
+            case YT.PlayerState.PAUSED:
+                this.state.playing = false;
+                this.updatePlayPauseButton();
+                this.stopProgressUpdate();
+                break;
         }
-      } else if (window.YT && window.YT.Player) {
-        this.onYouTubeIframeAPIReady()
-      } else {
-        console.log("Waiting for YouTube API...")
-        setTimeout(() => this.initializeYouTubeAPI(), 100)
-      }
     }
 
-    onYouTubeIframeAPIReady() {
-      if (typeof YT == "undefined" || typeof YT.Player == "undefined") {
-        window.setTimeout(this.onYouTubeIframeAPIReady, 100)
-      } else {
-        this.player = new YT.Player("youtube-player", {
-          height: "0",
-          width: "0",
-          events: {
-            onReady: this.onPlayerReady.bind(this),
-            onStateChange: this.onPlayerStateChange.bind(this),
-            onError: this.onPlayerError.bind(this),
-          },
-        })
-        this.initializePlayerControls()
-      }
+    handlePlayerError(event) {
+        const errorMessages = {
+            2: 'Parâmetro inválido',
+            5: 'Erro de HTML5',
+            100: 'Vídeo não encontrado',
+            101: 'Reprodução não permitida',
+            150: 'Reprodução não permitida'
+        };
+
+        const message = errorMessages[event.data] || 'Erro desconhecido';
+        console.error('Erro do YouTube:', message);
+        this.showError(`Não foi possível reproduzir esta faixa (${message})`);
+        this.playNext();
     }
 
-    // Métodos básicos de controle
-    loadTrack(track) {
-      console.log("Loading track:", track)
-      this.currentTrack = track
-      const videoId = this.extractVideoId(track.youtube_url)
-      if (videoId && this.player && this.player.loadVideoById) {
-        this.player.loadVideoById(videoId)
-        this.updatePlayerInfo()
-        this.showPlayer()
-      } else {
-        console.error("Invalid YouTube URL or player not ready")
-      }
+    // Métodos de controle do player
+    async loadPlaylist(tracks) {
+        if (!Array.isArray(tracks) || tracks.length === 0) {
+            this.showError('Playlist inválida');
+            return;
+        }
+
+        try {
+            // Aguarda inicialização se necessário
+            if (!this.state.initialized) {
+                await this.init();
+            }
+
+            this.playlist = tracks;
+            this.currentIndex = 0;
+            await this.loadTrack(tracks[0]);
+            this.showPlayer();
+        } catch (error) {
+            console.error('Erro ao carregar playlist:', error);
+            this.showError('Erro ao carregar playlist');
+        }
     }
 
-    loadPlaylist(tracks) {
-      if (!Array.isArray(tracks) || tracks.length === 0) {
-        console.error("Invalid tracks array")
-        return
-      }
+    async loadTrack(track) {
+        if (!track?.youtube_url) {
+            throw new Error('Track inválida');
+        }
 
-      this.playlist = tracks
-      this.currentIndex = 0
-      this.loadTrack(this.playlist[0])
+        try {
+            const videoId = this.extractVideoId(track.youtube_url);
+            if (!videoId) throw new Error('ID do vídeo inválido');
+
+            this.currentTrack = track;
+
+            if (this.player?.loadVideoById) {
+                this.player.loadVideoById(videoId);
+                this.updatePlayerInfo();
+            } else {
+                throw new Error('Player não está pronto');
+            }
+        } catch (error) {
+            console.error('Erro ao carregar track:', error);
+            throw error;
+        }
     }
 
+    // Utilitários
+    getPlayerElements() {
+        return {
+            container: document.getElementById('audio-player'),
+            youtubePlayer: document.getElementById('youtube-player'),
+            playPauseBtn: document.getElementById('play-pause-btn'),
+            prevBtn: document.getElementById('prev-btn'),
+            nextBtn: document.getElementById('next-btn'),
+            volumeControl: document.getElementById('volume-control'),
+            progressContainer: document.getElementById('progress-container'),
+            progressBar: document.getElementById('progress-bar'),
+            currentTime: document.getElementById('current-time'),
+            duration: document.getElementById('duration'),
+            title: document.getElementById('track-title'),
+            artist: document.getElementById('track-artist'),
+            cover: document.getElementById('album-cover'),
+            playIcon: document.getElementById('play-icon'),
+            pauseIcon: document.getElementById('pause-icon')
+        };
+    }
+
+    extractVideoId(url) {
+        try {
+            const urlObj = new URL(url);
+            const searchParams = new URLSearchParams(urlObj.search);
+
+            if (urlObj.hostname.includes('youtu.be')) {
+                return urlObj.pathname.slice(1);
+            }
+
+            return searchParams.get('v');
+        } catch {
+            // Tenta extrair o ID diretamente se a URL estiver malformada
+            const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+            return match ? match[1] : null;
+        }
+    }
+
+    showError(message) {
+        const toast = document.createElement('div');
+        toast.className = 'fixed bottom-5 right-5 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 5000);
+    }
+
+    showPlayer() {
+        this.elements.container?.classList.remove('hidden');
+    }
+
+    // Controles de reprodução
     togglePlay() {
-      if (this.player && this.isReady) {
-        if (this.player.getPlayerState() === YT.PlayerState.PLAYING) {
-          this.player.pauseVideo()
+        if (!this.player) return;
+
+        if (this.state.playing) {
+            this.player.pauseVideo();
         } else {
-          this.player.playVideo()
+            this.player.playVideo();
         }
-      }
+    }
+
+    updatePlayPauseButton() {
+        if (!this.elements.playIcon || !this.elements.pauseIcon) return;
+
+        if (this.state.playing) {
+            this.elements.playIcon.classList.add('hidden');
+            this.elements.pauseIcon.classList.remove('hidden');
+        } else {
+            this.elements.playIcon.classList.remove('hidden');
+            this.elements.pauseIcon.classList.add('hidden');
+        }
     }
 
     playNext() {
-      if (this.currentIndex < this.playlist.length - 1) {
-        this.currentIndex++
-        this.loadTrack(this.playlist[this.currentIndex])
-      } else if (this.playlist.length > 0) {
-        this.currentIndex = 0
-        this.loadTrack(this.playlist[this.currentIndex])
-      }
+        if (this.currentIndex < this.playlist.length - 1) {
+            this.currentIndex++;
+            this.loadTrack(this.playlist[this.currentIndex]);
+        }
     }
 
     playPrevious() {
-      if (this.currentIndex > 0) {
-        this.currentIndex--
-        this.loadTrack(this.playlist[this.currentIndex])
-      } else if (this.playlist.length > 0) {
-        this.currentIndex = this.playlist.length - 1
-        this.loadTrack(this.playlist[this.currentIndex])
-      }
+        if (this.currentIndex > 0) {
+            this.currentIndex--;
+            this.loadTrack(this.playlist[this.currentIndex]);
+        }
     }
 
-    // Métodos utilitários
-    extractVideoId(url) {
-      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/
-      const match = url.match(regExp)
-      return match && match[2].length === 11 ? match[2] : null
+    setVolume(volume) {
+        this.state.volume = volume;
+        this.player?.setVolume(volume);
+
+        if (this.elements.volumeControl) {
+            this.elements.volumeControl.value = volume;
+        }
     }
 
-    formatTime(time) {
-      const minutes = Math.floor(time / 60)
-      const seconds = Math.floor(time % 60)
-      return `${minutes}:${seconds.toString().padStart(2, "0")}`
+    seekTo(ratio) {
+        if (!this.player) return;
+
+        const duration = this.player.getDuration();
+        const newTime = duration * ratio;
+        this.player.seekTo(newTime, true);
     }
 
-    // Métodos de UI básicos
-    showPlayer() {
-      const playerElement = document.getElementById("audio-player")
-      if (playerElement) {
-        playerElement.classList.remove("hidden")
-      }
+    startProgressUpdate() {
+        this.stopProgressUpdate();
+        this.progressInterval = setInterval(() => this.updateProgress(), 1000);
+    }
+
+    stopProgressUpdate() {
+        if (this.progressInterval) {
+            clearInterval(this.progressInterval);
+            this.progressInterval = null;
+        }
+    }
+
+    updateProgress() {
+        if (!this.player || !this.elements.progressBar) return;
+
+        try {
+            const duration = this.player.getDuration() || 0;
+            const current = this.player.getCurrentTime() || 0;
+            const progress = (current / duration) * 100;
+
+            this.elements.progressBar.style.width = `${progress}%`;
+
+            if (this.elements.currentTime) {
+                this.elements.currentTime.textContent = this.formatTime(current);
+            }
+            if (this.elements.duration) {
+                this.elements.duration.textContent = this.formatTime(duration);
+            }
+        } catch (error) {
+            console.error('Erro ao atualizar progresso:', error);
+        }
+    }
+
+    formatTime(seconds) {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = Math.floor(seconds % 60);
+        return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
     }
 
     updatePlayerInfo() {
-      const titleElement = document.getElementById("track-title")
-      const artistElement = document.getElementById("track-artist")
-      const coverElement = document.getElementById("album-cover")
+        if (!this.currentTrack) return;
 
-      if (titleElement) titleElement.textContent = this.currentTrack.name || "Unknown Track"
-      if (artistElement) {
-        artistElement.textContent = `${this.currentTrack.artist || "Unknown Artist"} - ${this.currentTrack.vinyl_title || "Unknown Album"}`
-      }
-      if (coverElement) {
-        coverElement.src = this.currentTrack.cover_url || "/images/default-cover.jpg"
-        coverElement.alt = `${this.currentTrack.vinyl_title || "Album"} cover`
-      }
+        try {
+            // Atualiza título e artista
+            if (this.elements.title) {
+                this.elements.title.textContent = this.currentTrack.name || 'Desconhecido';
+            }
+            if (this.elements.artist) {
+                this.elements.artist.textContent = this.currentTrack.artist || 'Artista Desconhecido';
+            }
+
+            // Atualiza imagem com verificação e fallback
+            if (this.elements.cover) {
+                const defaultCover = '/images/default-cover.jpg'; // Ajuste para seu caminho padrão
+
+                // Função para verificar se a imagem existe
+                const checkImage = (url) => {
+                    return new Promise((resolve) => {
+                        const img = new Image();
+                        img.onload = () => resolve(true);
+                        img.onerror = () => resolve(false);
+                        img.src = url;
+                    });
+                };
+
+                // Tenta carregar a imagem com fallback
+                const loadCoverImage = async () => {
+                    if (!this.currentTrack.cover_url) {
+                        this.elements.cover.src = defaultCover;
+                        return;
+                    }
+
+                    const imageExists = await checkImage(this.currentTrack.cover_url);
+                    this.elements.cover.src = imageExists ? this.currentTrack.cover_url : defaultCover;
+                };
+
+                // Carrega a imagem apenas uma vez
+                if (this.elements.cover.dataset.currentTrack !== this.currentTrack.id) {
+                    loadCoverImage();
+                    this.elements.cover.dataset.currentTrack = this.currentTrack.id;
+                }
+            }
+        } catch (error) {
+            console.error('Erro ao atualizar informações do player:', error);
+        }
     }
+}
 
-    // Event handlers básicos
-    onPlayerReady(event) {
-      console.log("YouTube player is ready")
-      this.isReady = true
-      clearTimeout(this.initializationTimeout)
-      this.updateVolumeFromControl()
-    }
-
-    onPlayerStateChange(event) {
-      if (event.data === YT.PlayerState.ENDED) {
-        this.playNext()
-      }
-      this.updatePlayPauseButton(event.data === YT.PlayerState.PLAYING)
-      this.updateProgressBar(event.data === YT.PlayerState.PLAYING)
-    }
-
-    onPlayerError(event) {
-      console.error("YouTube Player Error:", event.data)
-    }
-
-    handleInitializationError() {
-      alert("Erro ao inicializar o player. Por favor, recarregue a página.")
-    }
-  }
-
-  // Exporta a classe para uso global
-  window.AudioPlayer = AudioPlayer
-
+// Inicialização única do player
+if (!window.audioPlayer) {
+    window.audioPlayer = new AudioPlayer();
+}
