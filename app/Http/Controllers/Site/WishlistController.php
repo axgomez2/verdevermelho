@@ -21,17 +21,19 @@ class WishlistController extends Controller
         return view('site.wishlist.index', compact('wishlistItems'));
     }
 
-    public function toggle(Request $request)
+    public function toggle($type, $id)
     {
-        $request->validate([
-            'product_id' => 'required|integer',
-            'product_type' => 'required|string',
-        ]);
+        if (!Auth::check()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Por favor, faça login para gerenciar seus favoritos'
+            ], 401);
+        }
 
         $wishlistItem = Wishlist::where([
             'user_id' => Auth::id(),
-            'product_id' => $request->product_id,
-            'product_type' => $request->product_type,
+            'product_id' => $id,
+            'product_type' => $type,
         ])->first();
 
         if ($wishlistItem) {
@@ -41,17 +43,22 @@ class WishlistController extends Controller
         } else {
             Wishlist::create([
                 'user_id' => Auth::id(),
-                'product_id' => $request->product_id,
-                'product_type' => $request->product_type,
+                'product_id' => $id,
+                'product_type' => $type,
             ]);
             $message = 'Item adicionado aos favoritos';
             $added = true;
         }
 
+        // Pega a contagem atualizada dos favoritos
+        $wishlistCount = Wishlist::where('user_id', Auth::id())->count();
+
         return response()->json([
             'success' => true,
             'message' => $message,
-            'added' => $added
+            'added' => $added,
+            'wishlistCount' => $wishlistCount
         ]);
     }
 }
+

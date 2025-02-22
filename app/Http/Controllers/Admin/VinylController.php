@@ -610,4 +610,29 @@ class VinylController extends Controller
                              ->withErrors(['error' => 'Ocorreu um erro ao salvar o vinyl. Por favor, tente novamente.']);
         }
     }
+
+    public function updateField(Request $request)
+{
+    try {
+        $vinyl = VinylMaster::findOrFail($request->id);
+
+        if (!$vinyl->vinylSec) {
+            throw new \Exception('Vinyl não possui dados secundários cadastrados.');
+        }
+
+        $vinyl->vinylSec->update([
+            $request->field => $request->value
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Campo atualizado com sucesso'
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage()
+        ], 422);
+    }
+}
 }

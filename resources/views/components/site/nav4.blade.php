@@ -26,30 +26,35 @@
         <div class="flex items-center space-x-4">
           <!-- Favorites -->
           @auth
-            <a href="{{ route('site.wishlist.index') }}" class="relative inline-flex items-center p-2 text-gray-500 hover:text-gray-900">
+          <a href="{{ route('site.wishlist.index') }}" class="relative inline-flex items-center p-2 text-gray-500 hover:text-gray-900">
               <i class="fa-regular fa-heart text-xl"></i>
-            </a>
-          @else
-            <button type="button" class="relative inline-flex items-center p-2 text-gray-500 hover:text-gray-900" onclick="showLoginToast()">
+              @if($wishlistCount > 0)
+                  <span data-wishlist-count class="absolute inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 border-2 border-white rounded-full -top-2 -right-2 dark:border-gray-900">
+                      {{ $wishlistCount }}
+                  </span>
+              @endif
+          </a>
+      @else
+          <button type="button" class="relative inline-flex items-center p-2 text-gray-500 hover:text-gray-900" onclick="showLoginToast()">
               <i class="fa-regular fa-heart text-xl"></i>
-            </button>
-          @endauth
+          </button>
+      @endauth
 
           <!-- Cart -->
           @auth
-            <button type="button" data-dropdown-toggle="cart-dropdown" class="relative inline-flex items-center p-2 text-gray-500 hover:text-gray-900">
+          <button type="button" data-dropdown-toggle="cart-dropdown" class="relative inline-flex items-center p-2 text-gray-500 hover:text-gray-900">
               <i class="fa-solid fa-cart-shopping text-xl"></i>
               @if($cartCount > 0)
-                <span class="absolute inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full -top-2 -right-2">
-                  {{ $cartCount }}
-                </span>
+                  <span data-cart-count class="absolute inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 border-2 border-white rounded-full -top-2 -right-2 dark:border-gray-900">
+                      {{ $cartCount }}
+                  </span>
               @endif
-            </button>
-          @else
-            <button type="button" class="relative inline-flex items-center p-2 text-gray-500 hover:text-gray-900" onclick="showLoginToast()">
+          </button>
+      @else
+          <button type="button" class="relative inline-flex items-center p-2 text-gray-500 hover:text-gray-900" onclick="showLoginToast()">
               <i class="fa-solid fa-cart-shopping text-xl"></i>
-            </button>
-          @endauth
+          </button>
+      @endauth
 
          @auth
           <div class="relative" x-data="{ open: false }">

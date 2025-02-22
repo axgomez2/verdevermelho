@@ -116,79 +116,74 @@
 
 
 @push('scripts')
-<script src="//unpkg.com/alpinejs" defer></script>
 <script>
-document.addEventListener('alpine:init', () => {
-    Alpine.data('toggleSwitch', (vinylId, field, initialState) => ({
-        checked: initialState,
-        loading: false,
-        async toggle() {
-            if (this.loading) return;
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('toggleSwitch', (vinylId, field, initialState) => ({
+            checked: initialState,
+            loading: false,
 
-            const previousState = this.checked;
-            this.loading = true;
+            async toggle() {
+                if (this.loading) return;
 
-            try {
-                const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-                const response = await fetch('{{ route('admin.vinyls.updateField') }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': token,
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        id: vinylId,
-                        field: field,
-                        value: this.checked ? 1 : 0
-                    })
-                });
+                const previousState = this.checked;
+                this.loading = true;
+                this.checked = !this.checked; // Atualiza o estado imediatamente para feedback visual
 
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
+                try {
+                    const response = await fetch('{{ route('admin.vinyls.updateField') }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            id: vinylId,
+                            field: field,
+                            value: this.checked ? 1 : 0
+                        })
+                    });
 
-                const data = await response.json();
-                if (data.success) {
+                    const data = await response.json();
+
+                    if (!data.success) {
+                        throw new Error(data.message || 'Falha ao atualizar');
+                    }
+
                     this.showToast('success', 'Atualizado com sucesso!');
-                } else {
-                    throw new Error('Update failed');
+                } catch (error) {
+                    console.error('Error:', error);
+                    this.checked = previousState; // Reverte o estado em caso de erro
+                    this.showToast('error', error.message || 'Ocorreu um erro. Por favor, tente novamente.');
+                } finally {
+                    this.loading = false;
                 }
-            } catch (error) {
-                console.error('Error:', error);
-                this.checked = previousState; // Restore previous state
-                this.showToast('error', 'Ocorreu um erro. Por favor, tente novamente.');
-            } finally {
-                this.loading = false;
+            },
+
+            showToast(type, message) {
+                const toast = document.createElement('div');
+                toast.className = `fixed bottom-5 right-5 flex items-center w-full max-w-xs p-4 mb-4 text-gray-500 bg-white rounded-lg shadow dark:text-gray-400 dark:bg-gray-800 z-50`;
+
+                const icon = type === 'success'
+                    ? `<svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                         <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z"/>
+                       </svg>`
+                    : `<svg class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                         <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 11.793a1 1 0 1 1-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 0 1-1.414-1.414L8.586 10 6.293 7.707a1 1 0 0 1 1.414-1.414L10 8.586l2.293-2.293a1 1 0 0 1 1.414 1.414L11.414 10l2.293 2.293Z"/>
+                       </svg>`;
+
+                toast.innerHTML = `
+                    <div class="inline-flex items-center justify-center flex-shrink-0 w-8 h-8 ${type === 'success' ? 'bg-green-100' : 'bg-red-100'} rounded-lg">
+                        ${icon}
+                    </div>
+                    <div class="ml-3 text-sm font-normal">${message}</div>
+                `;
+
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 3000);
             }
-        },
-        showToast(type, message) {
-            const toast = document.createElement('div');
-            toast.className = 'fixed bottom-5 right-5 flex items-center w-full max-w-xs p-4 mb-4 text-gray-500 bg-white rounded-lg shadow dark:text-gray-400 dark:bg-gray-800 z-50';
-
-            const icon = type === 'success'
-                ? `<svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                     <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z"/>
-                   </svg>`
-                : `<svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                     <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 11.793a1 1 0 1 1-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 0 1-1.414-1.414L8.586 10 6.293 7.707a1 1 0 0 1 1.414-1.414L10 8.586l2.293-2.293a1 1 0 0 1 1.414 1.414L11.414 10l2.293 2.293Z"/>
-                   </svg>`;
-
-            const bgColor = type === 'success' ? 'bg-green-100 text-green-500' : 'bg-red-100 text-red-500';
-
-            toast.innerHTML = `
-                <div class="inline-flex items-center justify-center flex-shrink-0 w-8 h-8 ${bgColor} rounded-lg">
-                    ${icon}
-                </div>
-                <div class="ml-3 text-sm font-normal">${message}</div>
-            `;
-
-            document.body.appendChild(toast);
-            setTimeout(() => {
-                toast.remove();
-            }, 3000);
-        }
-    }));
-});
+        }));
+    });
+    </script>
 </script>
 @endpush

@@ -172,3 +172,14 @@ body.modal-open {
 .alert-error {
     @apply bg-red-50 text-red-800;
 }
+
+
+@layer components {
+    .vinyl-card-transition {
+      @apply transition-all duration-300 ease-in-out;
+    }
+
+    .vinyl-card-hover {
+      @apply hover:shadow-lg hover:-translate-y-1;
+    }
+  }

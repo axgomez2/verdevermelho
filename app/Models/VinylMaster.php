@@ -8,10 +8,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
-
+use App\Traits\HasWishlist;
 class VinylMaster extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, HasWishlist;
 
     protected $fillable = [
         'title',

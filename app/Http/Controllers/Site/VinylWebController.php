@@ -97,15 +97,57 @@ class VinylWebController extends Controller
     }
 
     public function byCategory(Request $request, $slug)
-    {
-        // Busca a categoria pelo slug
-        $category = CatStyleShop::where('slug', $slug)->firstOrFail();
+{
+    // Busca a categoria pelo slug
+    $category = CatStyleShop::where('slug', $slug)->firstOrFail();
 
-        // Filtra os VinylMasters que possuem VinylSec associado à categoria
-        $vinyls = VinylMaster::whereHas('vinylSec.categories', function($q) use ($slug) {
-            $q->where('slug', $slug);
-        })->paginate(20);
+    // Query base
+    $query = VinylMaster::whereHas('catStyleShops', function($q) use ($slug) {
+        $q->where('slug', $slug);
+    })->with(['vinylSec', 'artists', 'recordLabel', 'catStyleShops']);
 
-        return view('site.vinyls.index', compact('vinyls', 'category'));
+    // Aplicar ordenação
+    switch ($request->get('sort')) {
+        case 'price_asc':
+            $query->join('vinyl_secs', 'vinyl_masters.id', '=', 'vinyl_secs.vinyl_master_id')
+                  ->orderBy('vinyl_secs.price', 'asc')
+                  ->select('vinyl_masters.*');
+            break;
+        case 'price_desc':
+            $query->join('vinyl_secs', 'vinyl_masters.id', '=', 'vinyl_secs.vinyl_master_id')
+                  ->orderBy('vinyl_secs.price', 'desc')
+                  ->select('vinyl_masters.*');
+            break;
+        case 'artist_asc':
+            $query->join('artist_vinyl_master', 'vinyl_masters.id', '=', 'artist_vinyl_master.vinyl_master_id')
+                  ->join('artists', 'artists.id', '=', 'artist_vinyl_master.artist_id')
+                  ->orderBy('artists.name', 'asc')
+                  ->select('vinyl_masters.*')
+                  ->distinct();
+            break;
+        case 'artist_desc':
+            $query->join('artist_vinyl_master', 'vinyl_masters.id', '=', 'artist_vinyl_master.vinyl_master_id')
+                  ->join('artists', 'artists.id', '=', 'artist_vinyl_master.artist_id')
+                  ->orderBy('artists.name', 'desc')
+                  ->select('vinyl_masters.*')
+                  ->distinct();
+            break;
+        case 'name_asc':
+            $query->orderBy('title', 'asc');
+            break;
+        case 'name_desc':
+            $query->orderBy('title', 'desc');
+            break;
+        default:
+            $query->latest();
+            break;
     }
+
+    // Executar a query com paginação
+    $vinyls = $query->paginate(20)->withQueryString();
+
+    return view('site.vinyls.category', compact('vinyls', 'category'));
+}
+
+
 }

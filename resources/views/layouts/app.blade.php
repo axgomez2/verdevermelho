@@ -88,8 +88,8 @@
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script src="{{ asset('assets/js/audio-player.js') }}" defer></script>
     {{-- <script src="{{ asset('assets/js/vinyl-card.js') }}" defer></script>
-    <script src="{{ asset('assets/js/track-list.js') }}" defer></script>
-    <script src="{{ asset('assets/js/vinyl-player.js') }}" defer></script> --}}
+    <script src="{{ asset('assets/js/track-list.js') }}" defer></script>--}}
+    <script src="{{ asset('assets/js/vinyl-player.js') }}" defer></script>
     <script src="{{ asset('assets/js/favorites.js') }}"></script>
     <script src="{{ asset('assets/js/cart.js') }}"></script>
     <script src="{{ asset('assets/js/wantlist.js') }}"></script>

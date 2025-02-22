@@ -66,6 +66,10 @@ Route::middleware(['auth', 'verified', 'rolemanager:user'])->group(function () {
     //  Rotas de wantlist
     Route::get('/wantlist', [WantlistController::class, 'index'])->name('site.wantlist.index');
     Route::post('/wantlist/toggle', [WantlistController::class, 'toggle'])->name('site.wantlist.toggle');
+    Route::middleware(['auth'])->group(function () {
+        Route::get('/wishlist', [WishlistController::class, 'index'])->name('site.wishlist.index');
+        Route::post('/wishlist/toggle/{type}/{id}', [WishlistController::class, 'toggle'])->name('site.wishlist.toggle');
+    });
     //rotas de checkout
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('site.checkout.index');
     Route::post('/checkout', [CheckoutController::class, 'process'])->name('site.checkout.process');

@@ -27,99 +27,38 @@
     <td class="px-6 py-4">
         <div class="space-y-3">
             <!-- Toggle Promoção -->
-            <div class="flex items-center">
-                <div x-data="{
-                    checked: {{ $vinyl->vinylSec && $vinyl->vinylSec->is_promotional ? 'true' : 'false' }},
-                    loading: false,
-                    async toggle() {
-                        if (this.loading) return;
-                        this.loading = true;
-                        try {
-                            const response = await fetch('{{ route('admin.vinyls.updateField') }}', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                    'Accept': 'application/json'
-                                },
-                                body: JSON.stringify({
-                                    id: {{ $vinyl->id }},
-                                    field: 'is_promotional',
-                                    value: this.checked ? 1 : 0
-                                })
-                            });
+<div class="flex items-center">
+    <div x-data="toggleSwitch({{ $vinyl->id }}, 'is_promotional', {{ $vinyl->vinylSec && $vinyl->vinylSec->is_promotional ? 'true' : 'false' }})"
+         class="relative inline-flex items-center">
+        <button type="button"
+                @click="toggle()"
+                :disabled="loading"
+                class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
+                :class="{ 'bg-blue-600': checked, 'bg-gray-200': !checked, 'opacity-50': loading }">
+            <span class="sr-only">Toggle Promotional</span>
+            <span class="pointer-events-none relative inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                  :class="{ 'translate-x-5': checked, 'translate-x-0': !checked }"></span>
+        </button>
+    </div>
+    <span class="ml-3 text-sm font-medium text-gray-900">Em promoção</span>
+</div>
 
-                            const data = await response.json();
-                            if (!data.success) {
-                                throw new Error(data.message);
-                            }
-                        } catch (error) {
-                            console.error('Error:', error);
-                            this.checked = !this.checked;
-                        } finally {
-                            this.loading = false;
-                        }
-                    }
-                }" class="relative inline-flex items-center">
-                    <button type="button"
-                            @click="checked = !checked; toggle()"
-                            :disabled="loading"
-                            class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
-                            :class="{ 'bg-blue-600': checked, 'bg-gray-200': !checked, 'opacity-50': loading }">
-                        <span class="sr-only">Toggle Promotional</span>
-                        <span class="pointer-events-none relative inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
-                              :class="{ 'translate-x-5': checked, 'translate-x-0': !checked }"></span>
-                    </button>
-                </div>
-                <span class="ml-3 text-sm font-medium text-gray-900">Em promoção</span>
-            </div>
-
-            <!-- Toggle Estoque -->
-            <div class="flex items-center">
-                <div x-data="{
-                    checked: {{ $vinyl->vinylSec && $vinyl->vinylSec->in_stock ? 'true' : 'false' }},
-                    loading: false,
-                    async toggle() {
-                        if (this.loading) return;
-                        this.loading = true;
-                        try {
-                            const response = await fetch('{{ route('admin.vinyls.updateField') }}', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                    'Accept': 'application/json'
-                                },
-                                body: JSON.stringify({
-                                    id: {{ $vinyl->id }},
-                                    field: 'in_stock',
-                                    value: this.checked ? 1 : 0
-                                })
-                            });
-                            const data = await response.json();
-                            if (!data.success) {
-                                throw new Error(data.message);
-                            }
-                        } catch (error) {
-                            console.error('Error:', error);
-                            this.checked = !this.checked;
-                        } finally {
-                            this.loading = false;
-                        }
-                    }
-                }" class="relative inline-flex items-center">
-                    <button type="button"
-                            @click="checked = !checked; toggle()"
-                            :disabled="loading"
-                            class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
-                            :class="{ 'bg-blue-600': checked, 'bg-gray-200': !checked, 'opacity-50': loading }">
-                        <span class="sr-only">Toggle Stock</span>
-                        <span class="pointer-events-none relative inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
-                              :class="{ 'translate-x-5': checked, 'translate-x-0': !checked }"></span>
-                    </button>
-                </div>
-                <span class="ml-3 text-sm font-medium text-gray-900">Em estoque</span>
-            </div>
+          <!-- Toggle Estoque -->
+<div class="flex items-center">
+    <div x-data="toggleSwitch({{ $vinyl->id }}, 'in_stock', {{ $vinyl->vinylSec && $vinyl->vinylSec->in_stock ? 'true' : 'false' }})"
+         class="relative inline-flex items-center">
+        <button type="button"
+                @click="toggle()"
+                :disabled="loading"
+                class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
+                :class="{ 'bg-blue-600': checked, 'bg-gray-200': !checked, 'opacity-50': loading }">
+            <span class="sr-only">Toggle Stock</span>
+            <span class="pointer-events-none relative inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                  :class="{ 'translate-x-5': checked, 'translate-x-0': !checked }"></span>
+        </button>
+    </div>
+    <span class="ml-3 text-sm font-medium text-gray-900">Em estoque</span>
+</div>
         </div>
     </td>
     <td class="px-6 py-4">

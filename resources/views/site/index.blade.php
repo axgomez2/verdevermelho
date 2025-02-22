@@ -3,7 +3,7 @@
     <div class="container mx-auto p-4  ">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 ">
             <!-- Newsletter Section -->
-            <div class="relative h-[500px] rounded-xl overflow-hidden row-span-3">
+            <div class="relative h-[500px] overflow-hidden row-span-3">
                 <div class="absolute inset-0 bg-cover bg-center"
                      style="background-image: url('https://therecordhub.com/cdn/shop/articles/realistic-scene-with-vinyl-records-neighborhood-yard-sale_optimized_100_3500x.jpg?v=1719231981')">
                     <div class="absolute inset-0 bg-black/50"></div>
@@ -41,7 +41,7 @@
                 <!-- Location Images -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 h-[174px]">
                     <!-- Location 1 -->
-                    <div class="relative rounded-xl overflow-hidden">
+                    <div class="relative  overflow-hidden">
                         <img
                             src="/placeholder.svg?height=250&width=400"
                             alt="Location 1"
@@ -52,7 +52,7 @@
                         </div>
                     </div>
                     <!-- Location 2 -->
-                    <div class="relative rounded-xl overflow-hidden">
+                    <div class="relative  overflow-hidden">
                         <img
                             src="/placeholder.svg?height=250&width=400"
                             alt="Location 2"
@@ -84,10 +84,10 @@
 
 
 
-<div class="font-[sans-serif] p-4 mx-8 max-w-[1400px]">
-    <h2 class="font-jersey text-xl sm:text-3xl text-gray-800 mt-4">Últimos discos adicionados</h2>
-    <div class="divider mb-3"></div>
-    <div class="container mb-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+<div class="max-w-screen-xl mx-auto px-4 py-8">
+    <h2 class="text-2xl font-bold text-gray-900 mb-4 dark:text-white">Últimos discos adicionados</h2>
+    <hr class="h-px my-4 bg-gray-200 border-0 dark:bg-gray-700">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         @foreach($latestVinyls as $vinyl)
             @include('components.site.vinyl-card', ['vinyl' => $vinyl])
         @endforeach
@@ -95,7 +95,7 @@
 </div>
 
 
-
+{{--
 <div class="bg-white shadow-md rounded-lg overflow-hidden">
     <h2 class="text-2xl font-bold p-4 bg-blue-500 text-white">DJ Charts</h2>
     <div class="p-4">
@@ -107,7 +107,7 @@
         @endforeach
         <a href="{{ route('site.djcharts.index') }}" class="mt-4 inline-block bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Ver todos os DJ Charts</a>
     </div>
-</div>
+</div> --}}
 
 
 <!-- component -->
@@ -116,7 +116,6 @@
 
         <!-- Centering wrapper -->
 
-    </div>
-</div>
+
 
 </x-app-layout>
