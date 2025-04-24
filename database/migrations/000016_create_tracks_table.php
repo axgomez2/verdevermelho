@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('duration')->nullable();
             $table->string('youtube_url')->nullable();
-            $table->string('position')->nullable();
+            
             $table->timestamps();
 
             $table->foreign('vinyl_master_id')->references('id')->on('vinyl_masters')->onDelete('cascade');
