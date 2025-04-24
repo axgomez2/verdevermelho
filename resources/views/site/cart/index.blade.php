@@ -1,7 +1,7 @@
 <x-app-layout>
     <section class="bg-white py-8 antialiased md:py-16">
         <div class="mx-auto max-w-screen-xl px-4 2xl:px-0">
-            <h2 class="text-xl font-semibold text-gray-900 sm:text-2xl">Shopping Cart</h2>
+            <h2 class="text-xl font-semibold text-gray-900 sm:text-2xl">Carrinho de Compras</h2>
 
             <div class="mt-6 sm:mt-8 md:gap-6 lg:flex lg:items-start xl:gap-8">
                 <div class="mx-auto w-full flex-none lg:max-w-2xl xl:max-w-4xl">
@@ -13,7 +13,7 @@
                                         <img class="h-20 w-20 object-cover" src="{{ $item->product->productable->vinylSec->cover_image ?? asset('images/placeholder.jpg') }}" alt="{{ $item->product->productable->title }}">
                                     </a>
 
-                                    <label for="counter-input-{{ $item->id }}" class="sr-only">Choose quantity:</label>
+                                    <label for="counter-input-{{ $item->id }}" class="sr-only">Escolher quantidade:</label>
                                     <div class="flex items-center justify-between md:order-3 md:justify-end">
                                         <div class="flex items-center">
                                             <button type="button" data-item-id="{{ $item->id }}" class="decrement-button inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-gray-300 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-100">
@@ -41,7 +41,7 @@
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="inline-flex items-center text-sm font-medium text-red-600 hover:underline">
-                                                    Remove
+                                                    Remover
                                                 </button>
                                             </form>
                                         </div>
@@ -54,7 +54,7 @@
 
                 <div class="mx-auto mt-6 max-w-4xl flex-1 space-y-6 lg:mt-0 lg:w-full">
                     <div class="space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
-                        <p class="text-xl font-semibold text-gray-900">Order summary</p>
+                        <p class="text-xl font-semibold text-gray-900">Resumo do Pedido</p>
 
                         <div class="space-y-4">
                             <div class="space-y-2">
@@ -64,7 +64,7 @@
                                 </dl>
 
                                 <dl class="flex items-center justify-between gap-4">
-                                    <dt class="text-base font-normal text-gray-500">Shipping</dt>
+                                    <dt class="text-base font-normal text-gray-500">Frete</dt>
                                     <dd class="text-base font-medium text-gray-900">
                                         @if($address || session('shipping_postal_code'))
                                             @php
@@ -83,12 +83,12 @@
                                                 <select name="shipping_option" id="shipping_option" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                                                     @foreach($shippingOptions as $option)
                                                         <option value="{{ $option['id'] }}">
-                                                            {{ $option['name'] }} - R$ {{ number_format($option['price'], 2, ',', '.') }}
+                                                            {{ $option['name'] }} - {{ $option['delivery_time'] }} dias - R$ {{ number_format($option['price'], 2, ',', '.') }}
                                                         </option>
                                                     @endforeach
                                                 </select>
                                             @else
-                                                R$ {{ number_format($shipping, 2, ',', '.') }}
+                                                <p class="text-sm text-gray-500">Calculando frete...</p>
                                             @endif
 
                                             <p class="mt-2 text-sm text-gray-600">
@@ -108,7 +108,7 @@
                                 </dl>
 
                                 <dl class="flex items-center justify-between gap-4">
-                                    <dt class="text-base font-normal text-gray-500">Tax</dt>
+                                    <dt class="text-base font-normal text-gray-500">Impostos</dt>
                                     <dd class="text-base font-medium text-gray-900">R$ {{ number_format($tax, 2, ',', '.') }}</dd>
                                 </dl>
                             </div>
@@ -120,13 +120,13 @@
                         </div>
 
                         <a href="{{ route('site.checkout.index') }}" class="flex w-full items-center justify-center rounded-lg bg-primary-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-800 focus:outline-none focus:ring-4 focus:ring-primary-300">
-                            Proceed to Checkout
+                            Finalizar Compra
                         </a>
 
                         <div class="flex items-center justify-center gap-2">
-                            <span class="text-sm font-normal text-gray-500"> or </span>
+                            <span class="text-sm font-normal text-gray-500">ou</span>
                             <a href="{{ route('site.home') }}" class="inline-flex items-center gap-2 text-sm font-medium text-primary-700 underline hover:no-underline">
-                                Continue Shopping
+                                Continuar Comprando
                                 <svg class="h-5 w-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 12H5m14 0-4 4m4-4-4-4" />
                                 </svg>
@@ -139,7 +139,7 @@
                             @csrf
                             <div>
                                 <label for="postal_code" class="mb-2 block text-sm font-medium text-gray-900">Digite seu CEP</label>
-                                <input type="text" id="postal_code" name="postal_code" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-primary-500" placeholder="00000000" required />
+                                <input type="text" id="postal_code" name="postal_code" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-primary-500" placeholder="00000-000" required />
                             </div>
                             <button type="submit" class="flex w-full items-center justify-center rounded-lg bg-primary-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-800 focus:outline-none focus:ring-4 focus:ring-primary-300">
                                 Calcular Frete
@@ -205,6 +205,29 @@
                     updateQuantity(itemId, newQuantity);
                 });
             });
+
+            // Add shipping option change handler
+            const shippingSelect = document.getElementById('shipping_option');
+            if (shippingSelect) {
+                shippingSelect.addEventListener('change', function() {
+                    fetch('{{ route("site.cart.updateShipping") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({
+                            shipping_option: this.value
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            window.location.reload();
+                        }
+                    });
+                });
+            }
         });
     </script>
     @endpush

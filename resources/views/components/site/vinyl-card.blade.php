@@ -1,19 +1,4 @@
-@php
-    // Verifica se o vinil tem faixas com URLs do YouTube
-    $hasPlayableTracks = $vinyl->tracks->contains(function($track) {
-        return !empty($track->youtube_url);
-    });
-
-    $isAvailable = $vinyl->vinylSec->quantity > 0 && $vinyl->vinylSec->in_stock;
-    $statusText = !$vinyl->vinylSec->in_stock ? 'Fora de Estoque' :
-                 ($vinyl->vinylSec->quantity == 0 ? 'Esgotado' : 'Disponível');
-    $statusClass = $isAvailable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
-
-    // Nova validação para promoção
-    $isPromotional = $vinyl->vinylSec->is_promotional &&
-                    $vinyl->vinylSec->promotional_price &&
-                    $vinyl->vinylSec->promotional_price > 0;
-@endphp
+@props(['vinyl'])
 
 <div class="bg-white border border-gray-200 rounded-lg shadow hover:shadow-xl transition-all duration-300 group h-full">
     <!-- Card para Desktop (vertical) -->
@@ -26,10 +11,10 @@
                 onerror="this.src='{{ asset('assets/images/placeholder.jpg') }}'"
             />
             <div class="absolute top-2 left-2 flex flex-col gap-2">
-                <span class="{{ $statusClass }} text-xs font-medium px-2.5 py-0.5 rounded-full">
-                    {{ $statusText }}
+                <span class="{{ $vinyl->vinylSec->quantity > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }} text-xs font-medium px-2.5 py-0.5 rounded-full">
+                    {{ $vinyl->vinylSec->quantity > 0 ? 'Disponível' : 'Indisponível' }}
                 </span>
-                @if($isPromotional)
+                @if($vinyl->vinylSec->is_promotional && $vinyl->vinylSec->promotional_price && $vinyl->vinylSec->promotional_price > 0)
                     <span class="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded">
                         Oferta
                     </span>
@@ -37,7 +22,7 @@
             </div>
             <button
                 type="button"
-                class="play-button absolute bottom-2 right-2 inline-flex items-center justify-center w-8 h-8 text-white rounded-full focus:ring-4 focus:ring-blue-300 {{ $hasPlayableTracks ? 'bg-blue-700 hover:bg-blue-800' : 'bg-gray-400 cursor-not-allowed' }}"
+                class="play-button absolute bottom-2 right-2 inline-flex items-center justify-center w-8 h-8 text-white rounded-full focus:ring-4 focus:ring-blue-300 {{ $vinyl->tracks->contains(function($track) { return !empty($track->youtube_url); }) ? 'bg-blue-700 hover:bg-blue-800' : 'bg-gray-400 cursor-not-allowed' }}"
                 data-vinyl-info="{{ json_encode([
                     'tracks' => $vinyl->tracks->map(function($track) {
                         return [
@@ -50,8 +35,8 @@
                     'coverUrl' => asset('storage/' . $vinyl->cover_image),
                     'vinylTitle' => $vinyl->title
                 ]) }}"
-                {{ $hasPlayableTracks ? '' : 'disabled' }}
-                title="{{ $hasPlayableTracks ? 'Reproduzir' : 'Áudio não disponível' }}"
+                {{ $vinyl->tracks->contains(function($track) { return !empty($track->youtube_url); }) ? '' : 'disabled' }}
+                title="{{ $vinyl->tracks->contains(function($track) { return !empty($track->youtube_url); }) ? 'Reproduzir' : 'Áudio não disponível' }}"
             >
                 <i class="fas fa-play text-xs"></i>
             </button>
@@ -66,7 +51,7 @@
             <div class="flex justify-between items-start mt-2.5">
                 <div>
                     <p class="text-xs text-gray-500">{{ $vinyl->recordLabel->name }} • {{ $vinyl->release_year }}</p>
-                    @if($isPromotional)
+                    @if($vinyl->vinylSec->is_promotional && $vinyl->vinylSec->promotional_price && $vinyl->vinylSec->promotional_price > 0)
                         <p class="text-xs text-gray-500 line-through">
                             R$ {{ number_format($vinyl->vinylSec->price, 2, ',', '.') }}
                         </p>
@@ -81,24 +66,26 @@
                 </div>
                 <button
                     type="button"
-                    title="{{ $vinyl->inWishlist() ? 'Remover dos favoritos' : 'Adicionar aos favoritos' }}"
+                    title="{{ auth()->check() && $vinyl->inWishlist() ? 'Remover dos favoritos' : (auth()->check() && !$vinyl->vinylSec->quantity > 0 && $vinyl->inWantlist() ? 'Remover da wantlist' : 'Adicionar aos favoritos') }}"
                     class="wishlist-button text-gray-400 hover:text-red-500 focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-lg text-sm p-2"
                     data-product-id="{{ $vinyl->id }}"
                     data-product-type="{{ get_class($vinyl) }}"
-                    data-in-wishlist="{{ $vinyl->inWishlist() ? 'true' : 'false' }}"
+                    data-is-available="{{ json_encode($vinyl->vinylSec->quantity > 0) }}"
+                    data-in-wishlist="{{ json_encode(auth()->check() && $vinyl->inWishlist()) }}"
+                    data-in-wantlist="{{ json_encode(auth()->check() && !$vinyl->vinylSec->quantity > 0 && $vinyl->inWantlist()) }}"
                 >
-                    <i class="fas fa-heart {{ $vinyl->inWishlist() ? 'text-red-500' : '' }}"></i>
+                    <i class="fas {{ auth()->check() && $vinyl->inWantlist() ? 'fa-flag' : 'fa-heart' }} {{ (auth()->check() && $vinyl->inWishlist() || auth()->check() && $vinyl->inWantlist()) ? 'text-red-500' : '' }}"></i>
                 </button>
             </div>
             <div class="mt-4">
                 <button
                     type="button"
-                    class="add-to-cart-button w-full text-gray-900 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 font-medium rounded-lg text-sm px-5 py-2.5 {{ !$isAvailable ? 'opacity-50 cursor-not-allowed' : '' }}"
-                    data-product-id="{{ $vinyl->product->id }}"
+                    class="add-to-cart-button w-full text-gray-900 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 font-medium rounded-lg text-sm px-5 py-2.5 {{ !$vinyl->vinylSec->quantity > 0 ? 'opacity-50 cursor-not-allowed' : '' }}"
+                    data-product-id="{{ $vinyl->product ? $vinyl->product->id : $vinyl->id }}"
                     data-quantity="1"
-                    {{ $isAvailable ? '' : 'disabled' }}
+                    {{ $vinyl->vinylSec->quantity > 0 ? '' : 'disabled' }}
                 >
-                    {{ $isAvailable ? 'Adicionar ao Carrinho' : 'Indisponível' }}
+                    <span class="add-to-cart-text">{{ $vinyl->vinylSec->quantity > 0 ? 'Adicionar ao Carrinho' : 'Indisponível' }}</span>
                 </button>
             </div>
         </div>
@@ -114,10 +101,10 @@
                 onerror="this.src='{{ asset('assets/images/placeholder.jpg') }}'"
             />
             <div class="absolute top-1 left-1 flex flex-col gap-1">
-                <span class="{{ $statusClass }} text-xs font-medium px-2 py-0.5 rounded-full">
-                    {{ $statusText }}
+                <span class="{{ $vinyl->vinylSec->quantity > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }} text-xs font-medium px-2 py-0.5 rounded-full">
+                    {{ $vinyl->vinylSec->quantity > 0 ? 'Disponível' : 'Indisponível' }}
                 </span>
-                @if($isPromotional)
+                @if($vinyl->vinylSec->is_promotional && $vinyl->vinylSec->promotional_price && $vinyl->vinylSec->promotional_price > 0)
                     <span class="bg-red-100 text-red-800 text-xs font-medium px-2 py-0.5 rounded">
                         Oferta
                     </span>
@@ -138,7 +125,7 @@
             </div>
             <div class="flex justify-between items-center mt-2">
                 <div>
-                    @if($isPromotional)
+                    @if($vinyl->vinylSec->is_promotional && $vinyl->vinylSec->promotional_price && $vinyl->vinylSec->promotional_price > 0)
                         <p class="text-xs text-gray-500 line-through">
                             R$ {{ number_format($vinyl->vinylSec->price, 2, ',', '.') }}
                         </p>
@@ -154,7 +141,7 @@
                 <div class="flex gap-2">
                     <button
                         type="button"
-                        class="play-button inline-flex items-center p-2 text-white rounded-full focus:ring-4 focus:ring-blue-300 {{ $hasPlayableTracks ? 'bg-blue-700 hover:bg-blue-800' : 'bg-gray-400 cursor-not-allowed' }}"
+                        class="play-button inline-flex items-center p-2 text-white rounded-full focus:ring-4 focus:ring-blue-300 {{ $vinyl->tracks->contains(function($track) { return !empty($track->youtube_url); }) ? 'bg-blue-700 hover:bg-blue-800' : 'bg-gray-400 cursor-not-allowed' }}"
                         data-vinyl-info="{{ json_encode([
                             'tracks' => $vinyl->tracks->map(function($track) {
                                 return [
@@ -167,31 +154,34 @@
                             'coverUrl' => asset('storage/' . $vinyl->cover_image),
                             'vinylTitle' => $vinyl->title
                         ]) }}"
-                        onclick="{{ $hasPlayableTracks ? 'initializeCardPlayer(this)' : '' }}"
-                        {{ $hasPlayableTracks ? '' : 'disabled' }}
-                        title="{{ $hasPlayableTracks ? 'Reproduzir' : 'Áudio não disponível' }}"
+                        onclick="{{ $vinyl->tracks->contains(function($track) { return !empty($track->youtube_url); }) ? 'initializeCardPlayer(this)' : '' }}"
+                        {{ $vinyl->tracks->contains(function($track) { return !empty($track->youtube_url); }) ? '' : 'disabled' }}
+                        title="{{ $vinyl->tracks->contains(function($track) { return !empty($track->youtube_url); }) ? 'Reproduzir' : 'Áudio não disponível' }}"
                     >
                         <i class="fas fa-play text-xs"></i>
                     </button>
                     <button
                         type="button"
-                        title="{{ $vinyl->inWishlist() ? 'Remover dos favoritos' : 'Adicionar aos favoritos' }}"
+                        title="{{ auth()->check() && $vinyl->inWishlist() ? 'Remover dos favoritos' : (auth()->check() && !$vinyl->vinylSec->quantity > 0 && $vinyl->inWantlist() ? 'Remover da wantlist' : 'Adicionar aos favoritos') }}"
                         class="wishlist-button text-gray-400 hover:text-red-500 focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-lg text-sm p-2"
                         data-product-id="{{ $vinyl->id }}"
                         data-product-type="{{ get_class($vinyl) }}"
-                        data-in-wishlist="{{ $vinyl->inWishlist() ? 'true' : 'false' }}"
+                        data-is-available="{{ json_encode($vinyl->vinylSec->quantity > 0) }}"
+                        data-in-wishlist="{{ json_encode(auth()->check() && $vinyl->inWishlist()) }}"
+                        data-in-wantlist="{{ json_encode(auth()->check() && !$vinyl->vinylSec->quantity > 0 && $vinyl->inWantlist()) }}"
                     >
-                        <i class="fas fa-heart {{ $vinyl->inWishlist() ? 'text-red-500' : '' }}"></i>
+                        <i class="fas {{ auth()->check() && $vinyl->inWantlist() ? 'fa-flag' : 'fa-heart' }} {{ (auth()->check() && $vinyl->inWishlist() || auth()->check() && $vinyl->inWantlist()) ? 'text-red-500' : '' }}"></i>
                     </button>
                     <button
                         type="button"
-                        class="add-to-cart-button inline-flex items-center p-2 text-gray-900 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 {{ !$isAvailable ? 'opacity-50 cursor-not-allowed' : '' }}"
-                        data-product-id="{{ $vinyl->product->id }}"
+                        class="add-to-cart-button inline-flex items-center p-2 text-gray-900 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 {{ !$vinyl->vinylSec->quantity > 0 ? 'opacity-50 cursor-not-allowed' : '' }}"
+                        data-product-id="{{ $vinyl->product ? $vinyl->product->id : $vinyl->id }}"
                         data-quantity="1"
-                        {{ $isAvailable ? '' : 'disabled' }}
-                        title="{{ $isAvailable ? 'Adicionar ao carrinho' : 'Produto indisponível' }}"
+                        {{ $vinyl->vinylSec->quantity > 0 ? '' : 'disabled' }}
+                        title="{{ $vinyl->vinylSec->quantity > 0 ? 'Adicionar ao carrinho' : 'Produto indisponível' }}"
                     >
                         <i class="fas fa-shopping-cart"></i>
+                        <span class="add-to-cart-text sr-only">{{ $vinyl->vinylSec->quantity > 0 ? 'Adicionar ao Carrinho' : 'Indisponível' }}</span>
                     </button>
                 </div>
             </div>

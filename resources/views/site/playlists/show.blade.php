@@ -63,82 +63,53 @@
                 <!-- Right Column - Tracks List -->
                 <div class="lg:col-span-2">
                     <div class="bg-white rounded-lg shadow-md p-6">
-                        <h2 class="text-xl font-semibold mb-6">{{ __('Tracks') }}</h2>
+                        <h2 class="text-xl font-semibold mb-6">{{ __('Discos') }}</h2>
 
-                        <div class="space-y-4" x-data="playlistPlayer()">
-                            @foreach($playlist->tracks as $track)
-                            <div class="flex items-center space-x-4 p-3 hover:bg-gray-50 rounded-lg transition-colors"
-                                 :class="{'bg-gray-50': currentTrack && currentTrack.id === {{ $track->id }}}">
-                                <!-- Play Button -->
-                                <button @click="togglePlay({{ json_encode([
-                                    'id' => $track->id,
-                                    'title' => $track->vinylMaster->title,
-                                    'artist' => $track->vinylMaster->artists->pluck('name')->implode(', '),
-                                    'preview_url' => $track->trackable->preview_url ?? null
-                                ]) }})"
-                                        class="w-10 h-10 flex items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-colors">
-                                    <i class="fas" :class="currentTrack && currentTrack.id === {{ $track->id }} && isPlaying ? 'fa-pause' : 'fa-play'"></i>
-                                </button>
+                        <div class="space-y-4">
+                            @if($playlist->tracks->count() > 0)
+                                @foreach($playlist->tracks as $track)
+                                <div class="flex items-center space-x-4 p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                                    <!-- Vinyl Cover -->
+                                    <div class="w-12 h-12 flex-shrink-0">
+                                        @if($track->vinylMaster->cover_image)
+                                            <img src="{{ asset('storage/' . $track->vinylMaster->cover_image) }}"
+                                                alt="{{ $track->vinylMaster->title }}"
+                                                class="w-full h-full object-cover rounded">
+                                        @else
+                                            <div class="w-full h-full bg-gray-200 flex items-center justify-center rounded">
+                                                <i class="fas fa-record-vinyl text-gray-400"></i>
+                                            </div>
+                                        @endif
+                                    </div>
 
-                                <!-- Track Info -->
-                                <div class="flex-grow">
-                                    <h3 class="font-medium text-gray-900">{{ $track->vinylMaster->title }}</h3>
-                                    <p class="text-sm text-gray-500">{{ $track->vinylMaster->artists->pluck('name')->implode(', ') }}</p>
+                                    <!-- Track Info -->
+                                    <div class="flex-grow">
+                                        <h3 class="font-medium text-gray-900">{{ $track->vinylMaster->title }}</h3>
+                                        <p class="text-sm text-gray-500">{{ $track->vinylMaster->artists->pluck('name')->implode(', ') }}</p>
+                                    </div>
+
+                                    <!-- Link to Vinyl -->
+                                    @if($track->vinylMaster->slug)
+                                        <a href="{{ route('site.vinyl.show', ['artistSlug' => $track->vinylMaster->artists->first()->slug ?? 'artist', 'titleSlug' => $track->vinylMaster->slug]) }}"
+                                           class="text-blue-600 hover:text-blue-800">
+                                            <i class="fas fa-external-link-alt"></i>
+                                        </a>
+                                    @endif
                                 </div>
-
-                                <!-- Duration -->
-                                @if($track->trackable->duration)
-                                <span class="text-sm text-gray-500">
-                                    {{ gmdate("i:s", $track->trackable->duration) }}
-                                </span>
-                                @endif
-                            </div>
-                            @endforeach
+                                @endforeach
+                            @else
+                                <div class="py-8 text-center">
+                                    <div class="mb-4">
+                                        <i class="fas fa-record-vinyl text-gray-400 text-5xl"></i>
+                                    </div>
+                                    <h3 class="text-lg font-medium text-gray-900 mb-2">Nenhum disco cadastrado</h3>
+                                    <p class="text-gray-500">Este DJ ainda não tem discos cadastrados em sua playlist.</p>
+                                </div>
+                            @endif
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
-    @push('scripts')
-    <script>
-        function playlistPlayer() {
-            return {
-                audio: new Audio(),
-                currentTrack: null,
-                isPlaying: false,
-
-                togglePlay(track) {
-                    if (!track.preview_url) {
-                        alert('{{ __("No preview available for this track") }}');
-                        return;
-                    }
-
-                    if (this.currentTrack && this.currentTrack.id === track.id) {
-                        if (this.isPlaying) {
-                            this.audio.pause();
-                            this.isPlaying = false;
-                        } else {
-                            this.audio.play();
-                            this.isPlaying = true;
-                        }
-                    } else {
-                        if (this.audio) {
-                            this.audio.pause();
-                        }
-                        this.currentTrack = track;
-                        this.audio.src = track.preview_url;
-                        this.audio.play();
-                        this.isPlaying = true;
-                    }
-
-                    this.audio.onended = () => {
-                        this.isPlaying = false;
-                    };
-                }
-            }
-        }
-    </script>
-    @endpush
 </x-app-layout>

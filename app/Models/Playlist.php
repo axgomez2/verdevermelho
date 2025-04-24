@@ -26,6 +26,8 @@ class Playlist extends Model
         'is_active' => 'boolean',
     ];
 
+    protected $appends = ['image_url', 'status_texto'];
+
     protected static function boot()
     {
         parent::boot();
@@ -42,7 +44,7 @@ class Playlist extends Model
         return $this->hasMany(PlaylistTrack::class)->orderBy('position');
     }
 
-    public function vinylMasters()
+    public function discos()
     {
         return $this->belongsToMany(VinylMaster::class, 'playlist_tracks')
                     ->withPivot(['position', 'trackable_type', 'trackable_id'])
@@ -54,20 +56,25 @@ class Playlist extends Model
     {
         return $this->image
             ? asset('storage/' . $this->image)
-            : asset('assets/images/placeholder.jpg');
+            : asset('images/default-playlist.svg');
+    }
+
+    public function getStatusTextoAttribute()
+    {
+        return $this->is_active ? 'Ativa' : 'Inativa';
     }
 
     public function addTrack(VinylMaster $vinylMaster, $trackable)
     {
-        // Check if playlist already has 10 tracks
+        // Verifica se a playlist já tem 10 faixas
         if ($this->tracks()->count() >= 10) {
             return false;
         }
 
-        // Get the next position
+        // Obtém a próxima posição
         $position = $this->tracks()->max('position') + 1;
 
-        // Add the track with polymorphic relation
+        // Adiciona a faixa com relação polimórfica
         $this->tracks()->create([
             'vinyl_master_id' => $vinylMaster->id,
             'trackable_type' => get_class($trackable),
@@ -84,7 +91,7 @@ class Playlist extends Model
         if ($track) {
             $track->delete();
 
-            // Reorder remaining tracks
+            // Reordena as faixas restantes
             $this->tracks()
                 ->where('position', '>', $track->position)
                 ->update(['position' => \DB::raw('position - 1')]);
@@ -102,7 +109,7 @@ class Playlist extends Model
             return;
         }
 
-        // Update positions of other tracks
+        // Atualiza as posições das outras faixas
         if ($currentPosition < $newPosition) {
             $this->tracks()
                 ->where('position', '>', $currentPosition)
@@ -115,7 +122,18 @@ class Playlist extends Model
                 ->update(['position' => \DB::raw('position + 1')]);
         }
 
-        // Set new position for the track
+        // Define a nova posição para a faixa
         $track->update(['position' => $newPosition]);
+    }
+
+    public function hasSocialMedia(): bool
+    {
+        return $this->instagram_url || $this->youtube_url || 
+               $this->facebook_url || $this->soundcloud_url;
+    }
+
+    public function trackCount(): int
+    {
+        return $this->tracks()->count();
     }
 }

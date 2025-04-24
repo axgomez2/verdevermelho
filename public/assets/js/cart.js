@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (wishlistButton) {
         const productId = wishlistButton.dataset.productId
         const productType = wishlistButton.dataset.productType
-        toggleWishlist(wishlistButton, productType, productId)
+        // toggleWishlist(wishlistButton, productType, productId)
       }
     })
   })
@@ -101,54 +101,53 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function toggleWishlist(button, type, id) {
-    fetch(`/wishlist/toggle/${type}/${id}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').getAttribute("content"),
-        Accept: "application/json",
-      },
-    })
-      .then((response) => {
-        if (!response.ok) {
-          if (response.status === 401) {
-            throw new Error("Unauthorized")
-          }
-          return response.json().then((err) => {
-            throw err
-          })
-        }
-        return response.json()
-      })
-      .then((data) => {
-        if (data.success) {
-          // Atualiza o ícone
-          const icon = button.querySelector("i")
-          icon.classList.toggle("fa-regular")
-          icon.classList.toggle("fa-solid")
-          icon.classList.toggle("text-red-500")
+  // function toggleWishlist(button, type, id) {
+  //   fetch(`/wishlist/toggle/${type}/${id}`, {
+  //     method: "POST",
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //       "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').getAttribute("content"),
+  //       Accept: "application/json",
+  //     },
+  //   })
+  //     .then((response) => {
+  //       if (!response.ok) {
+  //         if (response.status === 401) {
+  //           throw new Error("Unauthorized")
+  //         }
+  //         return response.json().then((err) => {
+  //           throw err
+  //         })
+  //       }
+  //       return response.json()
+  //     })
+  //     .then((data) => {
+  //       if (data.success) {
+  //         // Atualiza o ícone
+  //         const icon = button.querySelector("i")
+  //         icon.classList.toggle("fa-regular")
+  //         icon.classList.toggle("fa-solid")
+  //         icon.classList.toggle("text-red-500")
 
-          // Atualiza a contagem
-          if (data.wishlistCount !== undefined) {
-            updateWishlistCount(data.wishlistCount)
-          }
+  //         // Atualiza a contagem
+  //         if (data.wishlistCount !== undefined) {
+  //           updateWishlistCount(data.wishlistCount)
+  //         }
 
-          window.showToast(data.message, "success")
-        } else {
-          window.showToast(data.message || "Erro ao atualizar favoritos", "error")
-        }
-      })
-      .catch((error) => {
-        console.error("Error:", error)
-        if (error.message === "Unauthorized") {
-          window.showToast("Por favor, faça login para gerenciar seus favoritos.", "error")
-        } else {
-          window.showToast(
-            error.message || "Ocorreu um erro ao atualizar seus favoritos. Por favor, tente novamente mais tarde.",
-            "error",
-          )
-        }
-      })
-  }
-
+  //         window.showToast(data.message, "success")
+  //       } else {
+  //         window.showToast(data.message || "Erro ao atualizar favoritos", "error")
+  //       }
+  //     })
+  //     .catch((error) => {
+  //       console.error("Error:", error)
+  //       if (error.message === "Unauthorized") {
+  //         window.showToast("Por favor, faça login para gerenciar seus favoritos.", "error")
+  //       } else {
+  //         window.showToast(
+  //           error.message || "Ocorreu um erro ao atualizar seus favoritos. Por favor, tente novamente mais tarde.",
+  //           "error",
+  //         )
+  //       }
+  //     })
+  // }

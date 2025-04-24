@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Site;
 
 use App\Http\Controllers\Controller;
-use App\Models\Deejay;
+use App\Models\Brand;
+use App\Models\Category;
+use App\Models\Equipment;
 use App\Models\VinylMaster;
+use App\Models\Playlist;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Product;
@@ -12,40 +15,35 @@ use App\Models\Product;
 class HomeController extends Controller
 {
     public function index()
-{
-    // Contagem de VinylMasters
-    $totalVinyls = VinylMaster::count();
+    {
+        $latestVinyls = VinylMaster::with(['artists', 'vinylSec', 'catStyleShops'])
+            ->whereHas('vinylSec', function ($query) {
+                $query->where('in_stock', true);
+            })
+            ->latest()
+            ->take(value: 20)
+            ->get();
 
-    // Contagem de VinylMasters com produto associado
-    $vinylsWithProduct = VinylMaster::whereHas('product')->count();
-
-    // Amostra de VinylMasters para debug
-    $sampleVinyls = VinylMaster::take(5)->get();
-
-    // Produtos relacionados aos VinylMasters de amostra
-    $relatedProducts = Product::whereIn('productable_id', $sampleVinyls->pluck('id'))
-        ->where('productable_type', VinylMaster::class)
-        ->get();
-
-    // Vinis mais recentes para exibição
-    $latestVinyls = VinylMaster::with(['artists', 'recordLabel', 'vinylSec', 'product'])
-        ->whereHas('vinylSec')
-        ->whereHas('product')
+        $slideVinyls = VinylMaster::with(['artists', 'vinylSec', 'catStyleShops'])
+        ->whereHas('vinylSec', function ($query) {
+            $query->where('in_stock', true);
+        })
         ->latest()
-        ->take(30)
+        ->take(value: 10)
         ->get();
 
-    // DJs ativos
-    $featuredDjs = Deejay::where('is_active', true)->withCount('recommendations')->take(3)->get();
+        // Obter as 3 playlists mais recentes que estão ativas
+        $featuredPlaylists = Playlist::with(['tracks.vinylMaster', 'tracks.trackable'])
+            ->where('is_active', true)
+            ->latest()
+            ->take(3)
+            ->get();
 
-    // Passamos todas essas informações para a view
-    return view('site.index', compact(
-        'latestVinyls',
-        'totalVinyls',
-        'vinylsWithProduct',
-        'sampleVinyls',
-        'relatedProducts',
-        'featuredDjs'
-    ));
-}
+        return view('site.index', compact('latestVinyls', 'slideVinyls', 'featuredPlaylists'));
+    }
+
+    public function about()
+    {
+        return view('site.about');
+    }
 }

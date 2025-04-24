@@ -2,7 +2,7 @@
     <div class="flex flex-wrap justify-between gap-10">
       <div class="max-w-md">
         <a href='javascript:void(0)'>
-          <img src="{{ asset('assets/images/logo_embaixada.png') }}" alt="embaixada-dance-music" class='w-40' />
+          <img src="{{ asset('assets/images/logo2.png') }}" alt="embaixada-dance-music" class='w-40' />
         </a>
         <div class="mt-6">
           <p class="text-gray-600 leading-relaxed text-sm">Rua Sete de Abril 154 - SL 53 </p>
@@ -142,4 +142,6 @@
 
       <p class='text-gray-600 text-sm md:ml-auto'>Embaixada dance music© GOCOM COMUNICAÇÂO. todos os direitos reservados.</p>
     </div>
+
+    
   </footer>

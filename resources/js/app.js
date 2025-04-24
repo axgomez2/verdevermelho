@@ -111,5 +111,47 @@ document.addEventListener('alpine:init', () => {
 // Make Alpine available globally
 window.Alpine = Alpine;
 
-// Start Alpine
-Alpine.start();
+// Configurar x-cloak para funcionar corretamente antes da inicialização
+document.addEventListener('DOMContentLoaded', () => {
+    // Adicionar o atributo x-cloak aos elementos que precisam ficar escondidos inicialmente
+    document.querySelectorAll('[x-show]').forEach(el => {
+        if (!el.hasAttribute('x-cloak')) {
+            el.setAttribute('x-cloak', '');
+        }
+    });
+
+    // Garantir que modais não sejam abertos automaticamente
+    document.querySelectorAll('[x-data]').forEach(el => {
+        const dataStr = el.getAttribute('x-data');
+        if (dataStr && dataStr.includes('open:') && dataStr.includes('true')) {
+            // Substitui qualquer inicialização que tenha open: true por open: false
+            const newDataStr = dataStr.replace(/open:\s*true/g, 'open: false');
+            el.setAttribute('x-data', newDataStr);
+        }
+    });
+
+    // Start Alpine
+    Alpine.start();
+});
+
+// Adicionar listener para o evento page-fully-loaded
+window.addEventListener('page-fully-loaded', function() {
+    // Caso necessário, podemos inicializar componentes específicos após a página estar totalmente carregada
+    console.log('Página totalmente carregada, componentes Alpine inicializados');
+
+    // Atualizamos componentes Alpine que podem precisar de reavaliação
+    if (typeof Alpine !== 'undefined' && Alpine.isInitialized) {
+        document.querySelectorAll('[x-data]').forEach(el => {
+            if (el._x_dataStack) {
+                // Força uma atualização se necessário
+                if (typeof el._x_effects !== 'undefined') {
+                    el._x_effects.forEach(effect => {
+                        if (typeof effect === 'function') {
+                            effect();
+                        }
+                    });
+                }
+            }
+        });
+    }
+});

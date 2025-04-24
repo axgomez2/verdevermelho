@@ -39,10 +39,37 @@ return [
     'api_key' => env('YOUTUBE_API_KEY'),
     ],
 
-    'melhorenvio' => [
-    'token' => env('MELHORENVIO_API_TOKEN'),
-    'from_postal_code' => env('MELHORENVIO_FROM_POSTAL_CODE'),
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI'),
+    ],
 
-],
+    'melhorenvio' => [
+        'client_id' => env('MELHORENVIO_CLIENT_ID'),
+        'client_secret' => env('MELHORENVIO_CLIENT_SECRET'),
+        'token' => env('MELHORENVIO_API_TOKEN'),
+        'sandbox' => env('MELHORENVIO_SANDBOX', true),
+        'from_postal_code' => env('MELHORENVIO_FROM_POSTAL_CODE'),
+        'from_address' => env('MELHORENVIO_FROM_ADDRESS'),
+        'from_number' => env('MELHORENVIO_FROM_NUMBER'),
+        'from_complement' => env('MELHORENVIO_FROM_COMPLEMENT'),
+        'from_district' => env('MELHORENVIO_FROM_DISTRICT'),
+        'from_city' => env('MELHORENVIO_FROM_CITY'),
+        'from_state' => env('MELHORENVIO_FROM_STATE'),
+    ],
+    
+    'workos' => [
+        'api_key' => env('WORKOS_API_KEY'),
+        'client_id' => env('WORKOS_CLIENT_ID'),
+        'redirect_uri' => env('WORKOS_REDIRECT_URI'),
+        'organization_id' => env('WORKOS_ORGANIZATION_ID'),
+    ],
+    
+    'melhorenvio_shipping' => [
+        'from_phone' => env('MELHORENVIO_FROM_PHONE'),
+        'from_email' => env('MELHORENVIO_FROM_EMAIL'),
+        'from_document' => env('MELHORENVIO_FROM_DOCUMENT'),
+    ],
 
 ];

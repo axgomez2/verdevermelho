@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use App\Traits\HasWishlist;
+use App\Models\Cart;
+
 class VinylMaster extends Model
 {
     use HasFactory, SoftDeletes, HasWishlist;
@@ -23,13 +25,17 @@ class VinylMaster extends Model
         'discogs_url',
         'release_year',
         'country',
-        'record_label_id'
+        'record_label_id',
+        'is_published'
     ];
 
     protected $casts = [
         'images' => 'array',
         'release_year' => 'integer',
+        'is_published' => 'boolean',
     ];
+
+    protected $with = ['artists', 'tracks', 'vinylSec', 'recordLabel'];
 
     protected static function boot()
     {
@@ -94,34 +100,41 @@ class VinylMaster extends Model
         $this->save();
     }
 
-    public function inWishlist()
-    {
-        if (!Auth::check()) {
-            return false;
-        }
-
-        return Wishlist::where([
-            'user_id' => Auth::id(),
-            'product_id' => $this->id,
-            'product_type' => self::class,
-        ])->exists();
-    }
-
-    public function inWantlist()
+    public function inWishlist(): bool
     {
         if (!auth()->check()) {
             return false;
         }
-        return $this->wantlists()->where('user_id', auth()->id())->exists();
+
+        return $this->wishlist()
+            ->where('user_id', auth()->id())
+            ->exists();
+    }
+
+    public function inWantlist(): bool
+    {
+        if (!auth()->check()) {
+            return false;
+        }
+
+        return $this->wantlist()
+            ->where('user_id', auth()->id())
+            ->exists();
+    }
+
+    public function wishlist()
+    {
+        return $this->morphMany(Wishlist::class, 'product');
+    }
+
+    public function wantlist()
+    {
+        return $this->morphMany(Wantlist::class, 'product');
     }
 
     public function wantlists()
     {
         return $this->morphMany(Wantlist::class, 'product');
-    }
-    public function wishlists()
-    {
-        return $this->morphMany(Wishlist::class, 'product');
     }
 
     public function cartItems()
@@ -145,5 +158,35 @@ class VinylMaster extends Model
                     ->withPivot(['position', 'trackable_type', 'trackable_id'])
                     ->orderBy('playlist_tracks.position')
                     ->withTimestamps();
+    }
+    
+    /**
+     * Verifica se este produto está no carrinho do usuário atual.
+     *
+     * @return bool
+     */
+    public function inCart(): bool
+    {
+        if (!auth()->check()) {
+            // Verificação para carrinho de usuário não logado
+            $sessionId = session()->getId();
+            $cart = Cart::where('session_id', $sessionId)->first();
+        } else {
+            // Verificação para usuário logado
+            $cart = auth()->user()->cart;
+        }
+        
+        // Se não houver carrinho, certamente o produto não está nele
+        if (!$cart) {
+            return false;
+        }
+        
+        // Verifica se o produto está no carrinho
+        return $cart->items()
+            ->whereHas('product', function($query) {
+                $query->where('productable_type', 'App\\Models\\VinylMaster')
+                      ->where('productable_id', $this->id);
+            })
+            ->exists();
     }
 }

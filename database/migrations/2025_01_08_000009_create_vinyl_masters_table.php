@@ -24,6 +24,7 @@ return new class extends Migration
             $table->string('country')->nullable();
             $table->unsignedBigInteger('record_label_id')->nullable();
             $table->integer('card_clicks')->default(0);
+            $table->boolean('is_published')->default(false);
             $table->timestamps();
             $table->softDeletes();
 

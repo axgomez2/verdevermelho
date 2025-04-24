@@ -11,11 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('deejay_vinyl_chart', function (Blueprint $table) {
+        Schema::create('order_items', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('dj_id')->constrained()->onDelete('cascade');
-            $table->foreignId('vinyl_master_id')->constrained()->onDelete('cascade');
-            $table->integer('order')->unsigned();
+            $table->foreignId('order_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('product_id')->constrained()->nullOnDelete();
+            $table->integer('quantity');
+            $table->decimal('price', 10, 2);
+            $table->decimal('total', 10, 2);
             $table->timestamps();
         });
     }
@@ -25,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('deejay_vinyl_chart');
+        Schema::dropIfExists('order_items');
     }
 };

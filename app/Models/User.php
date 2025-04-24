@@ -24,6 +24,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'phone',
         'cpf',
         'role',
+        'google_id',
     ];
 
     /**
@@ -60,6 +61,22 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasOne(Cart::class);
     }
 
+    /**
+     * Itens na wishlist do usuário (favoritos)
+     */
+    public function wishlist()
+    {
+        return $this->hasMany(Wishlist::class);
+    }
+
+    /**
+     * Itens na wantlist do usuário (itens desejados que não estão em estoque)
+     */
+    public function wantlist()
+    {
+        return $this->hasMany(Wantlist::class);
+    }
+
     public function sendEmailVerificationNotification()
     {
         $this->notify(new VerifyEmailNotification);
@@ -78,5 +95,13 @@ class User extends Authenticatable implements MustVerifyEmail
     public function defaultPaymentMethod()
     {
         return $this->paymentMethods()->wherePivot('is_default', true)->first();
+    }
+
+    /**
+     * Pedidos do usuário
+     */
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
     }
 }
