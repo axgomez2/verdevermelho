@@ -21,7 +21,6 @@ class ReportController extends Controller
         // Abordagem simplificada para testar se a view está funcionando
         return view('admin.reports.teste');
     }
-    }
     
     /**
      * Exibe um relatório detalhado dos discos mais vistos.
