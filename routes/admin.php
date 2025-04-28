@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\VinylController;
 use App\Http\Controllers\Admin\ShippingController;
 use App\Http\Controllers\Admin\VinylImageController;
 use App\Http\Controllers\Admin\EquipmentController;
+use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\YouTubeController;
 use Illuminate\Support\Facades\Route;
 
@@ -118,5 +119,10 @@ Route::middleware(['auth', 'rolemanager:admin'])->group(function () {
         Route::post('/shipping/{order}/generate-label', [ShippingController::class, 'generateLabel'])->name('admin.shipping.generate-label');
         Route::get('/shipping/{order}/print-label', [ShippingController::class, 'printLabel'])->name('admin.shipping.print-label');
         Route::get('/shipping/{order}/track', [ShippingController::class, 'trackShipment'])->name('admin.shipping.track');
+        
+        // Relatórios
+        Route::get('/relatorios', [ReportController::class, 'index'])->name('admin.reports.index');
+        Route::get('/relatorios/discos-mais-vistos', [ReportController::class, 'mostViewed'])->name('admin.reports.most-viewed');
+        Route::get('/relatorios/disco/{id}', [ReportController::class, 'vinylDetails'])->name('admin.reports.vinyl-details');
     });
 });

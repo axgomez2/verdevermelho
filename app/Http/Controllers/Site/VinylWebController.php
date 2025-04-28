@@ -14,7 +14,7 @@ class VinylWebController extends Controller
 {
     public function index(Request $request)
     {
-        $query = VinylMaster::with(['artists', 'recordLabel', 'vinylSec', 'styles', 'product', 'tracks']);
+        $query = VinylMaster::with(['artists', 'recordLabel', 'vinylSec', 'styles', 'product', 'tracks', 'catStyleShops']);
 
         // Apply search independently
         if ($request->filled('search')) {
@@ -45,24 +45,70 @@ class VinylWebController extends Controller
             return $vinyl;
         });
 
+        // Obter categorias de música para filtro
+        $categories = CatStyleShop::orderBy('nome')->get();
+        
+        // Obter gravadoras para filtro
+        $recordLabels = DB::table('record_labels')
+            ->whereIn('id', function($query) {
+                $query->select('record_label_id')
+                    ->from('vinyl_masters')
+                    ->whereNotNull('record_label_id')
+                    ->distinct();
+            })
+            ->orderBy('name')
+            ->get();
+
+        // Obter anos disponíveis para filtro
+        $releaseYears = VinylMaster::select('release_year')
+            ->whereNotNull('release_year')
+            ->distinct()
+            ->orderBy('release_year', 'desc')
+            ->pluck('release_year');
+
+        // Obter estilos para filtro
         $styles = Style::all();
 
         // Get min and max prices
         $priceRange = VinylSec::selectRaw('MIN(price) as min_price, MAX(price) as max_price')->first();
 
-        return view('site.vinyls.index', compact('vinyls', 'styles', 'priceRange'));
+        return view('site.vinyls.index', compact(
+            'vinyls', 
+            'styles', 
+            'priceRange', 
+            'categories', 
+            'recordLabels', 
+            'releaseYears'
+        ));
     }
 
     private function applyFilters($query, $request)
     {
-        // Apply style filter
+        // Filtro de estilo (style)
         if ($request->filled('style')) {
             $query->whereHas('styles', function ($q) use ($request) {
-                $q->where('name', $request->style);
+                $q->where('id', $request->style);
             });
         }
 
-        // Apply price filter
+        // Filtro de categoria (catstyleshop)
+        if ($request->filled('category')) {
+            $query->whereHas('catStyleShops', function ($q) use ($request) {
+                $q->where('cat_style_shop_id', $request->category);
+            });
+        }
+
+        // Filtro de gravadora (record_label)
+        if ($request->filled('record_label')) {
+            $query->where('record_label_id', $request->record_label);
+        }
+
+        // Filtro de ano de lançamento
+        if ($request->filled('release_year')) {
+            $query->where('release_year', $request->release_year);
+        }
+
+        // Filtro de preço
         if ($request->filled('min_price') && $request->filled('max_price')) {
             $query->whereHas('vinylSec', function ($q) use ($request) {
                 $q->whereBetween('price', [$request->min_price, $request->max_price]);

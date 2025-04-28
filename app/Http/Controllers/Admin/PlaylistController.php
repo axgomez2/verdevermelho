@@ -48,7 +48,24 @@ class PlaylistController extends Controller
         ]);
 
         if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('playlists', 'public');
+            // Processar a imagem para garantir que seja quadrada
+            $image = \Intervention\Image\ImageManager::gd()->read($request->file('image'));
+            
+            // Determinar o tamanho do quadrado (usar o menor lado)
+            $width = $image->width();
+            $height = $image->height();
+            $size = min($width, $height);
+            
+            // Recortar para um quadrado
+            $image = $image->cover($size, $size);
+            
+            // Gerar um nome de arquivo único
+            $filename = 'playlist_' . time() . '_' . uniqid() . '.jpg';
+            $path = 'playlists/' . $filename;
+            
+            // Salvar a imagem no storage com qualidade 80%
+            \Storage::disk('public')->put($path, $image->toJpeg(80));
+            
             $validated['image'] = $path;
         }
 
@@ -100,10 +117,29 @@ class PlaylistController extends Controller
         ]);
 
         if ($request->hasFile('image')) {
+            // Excluir a imagem anterior se existir
             if ($playlist->image) {
                 Storage::disk('public')->delete($playlist->image);
             }
-            $path = $request->file('image')->store('playlists', 'public');
+            
+            // Processar a imagem para garantir que seja quadrada
+            $image = \Intervention\Image\ImageManager::gd()->read($request->file('image'));
+            
+            // Determinar o tamanho do quadrado (usar o menor lado)
+            $width = $image->width();
+            $height = $image->height();
+            $size = min($width, $height);
+            
+            // Recortar para um quadrado
+            $image = $image->cover($size, $size);
+            
+            // Gerar um nome de arquivo único
+            $filename = 'playlist_' . time() . '_' . uniqid() . '.jpg';
+            $path = 'playlists/' . $filename;
+            
+            // Salvar a imagem no storage com qualidade 80%
+            \Storage::disk('public')->put($path, $image->toJpeg(80));
+            
             $validated['image'] = $path;
         }
 

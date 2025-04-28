@@ -35,7 +35,7 @@
                                     Acompanhe também:
                                 </p>
                                 <div class="grid md:grid-cols-2 gap-8">
-                                    <a href="https://instagram.com/djmarcosfreitas" target="_blank" rel="noopener noreferrer"
+                                    <a href="https://www.instagram.com/marcosfreitasdj" target="_blank" rel="noopener noreferrer"
                                        class="group relative aspect-[21/15] rounded-2xl overflow-hidden">
                                         <img src="{{ asset('assets/images/marcosfreitas.jpg') }}"
                                              class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
@@ -67,7 +67,7 @@
                                         </div>
                                     </a>
 
-                                    <a href="https://instagram.com/energyfest" target="_blank" rel="noopener noreferrer"
+                                    <a href="https://www.instagram.com/energyfestsp/" target="_blank" rel="noopener noreferrer"
                                        class="group relative aspect-[21/15] rounded-2xl overflow-hidden">
                                         <img src="{{ asset('assets/images/energyfest.jpg') }}"
                                              class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
@@ -205,6 +205,28 @@
                     @endforelse
                 </div>
             </div>
+            
+            <!-- Discos Aleatórios por Categoria -->
+            @foreach($categoriesWithRandomVinyls as $categoryData)
+            <div class="{{ $loop->first ? 'mb-20 mt-20' : 'mb-20' }}">
+                <div class="flex items-center justify-between mb-8">
+                    <div>
+                        <h2 class="text-3xl font-bold text-gray-900 mb-2">{{ $categoryData['category']->nome }}</h2>
+                    </div>
+
+                    <a href="{{ route('vinyls.byCategory', $categoryData['category']->slug) }}" 
+                       class="group inline-flex items-center text-blue-600 hover:text-blue-700 font-medium">
+                        Ver mais discos
+                        <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform"></i>
+                    </a>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                    @foreach($categoryData['vinyls'] as $vinyl)
+                        @include('components.site.vinyl-card', ['vinyl' => $vinyl])
+                    @endforeach
+                </div>
+            </div>
+            @endforeach
         </div>
     </div>
 
@@ -219,33 +241,103 @@
                     </span>
                     Receba ofertas exclusivas em primeira mão
                 </p>
-                <form action="#" method="POST" class="flex-shrink-0 flex gap-2">
-                    @csrf
-                    <div class="relative">
-                        <input type="email" name="email"
-                               class="w-64 pl-10 pr-4 py-1.5 rounded-full text-sm border-0 focus:ring-2 focus:ring-white/20"
-                               placeholder="Seu e-mail" required>
-                        <i class="fas fa-envelope absolute left-3.5 top-2 text-gray-400"></i>
+                <div class="relative flex-shrink-0">
+                    <form id="newsletter-form" action="{{ route('site.newsletter.store') }}" method="POST" class="flex gap-2">
+                        @csrf
+                        <div class="relative">
+                            <input type="email" name="email" id="newsletter-email"
+                                class="w-64 pl-10 pr-4 py-1.5 rounded-full text-sm border-0 focus:ring-2 focus:ring-white/20"
+                                placeholder="Seu e-mail" required>
+                            <i class="fas fa-envelope absolute left-3.5 top-2 text-gray-400"></i>
+                        </div>
+                        <button type="submit" id="newsletter-submit"
+                                class="px-6 py-1.5 bg-white text-blue-600 text-sm font-medium rounded-full hover:bg-blue-50 transition-colors">
+                            cadastre-se
+                        </button>
+                    </form>
+                    <div id="newsletter-success" class="hidden absolute mt-2 left-0 right-0 py-1.5 px-3 bg-green-600/90 text-white text-sm font-medium rounded-md">
+                        <div class="flex items-center">
+                            <i class="fas fa-check-circle mr-2"></i>
+                            <span>Email cadastrado com sucesso!</span>
+                        </div>
                     </div>
-                    <button type="submit"
-                            class="px-6 py-1.5 bg-white text-blue-600 text-sm font-medium rounded-full hover:bg-blue-50 transition-colors">
-                        cadastre-se
-                    </button>
-                </form>
+                    <div id="newsletter-error" class="hidden absolute mt-2 left-0 right-0 py-1.5 px-3 bg-red-600/90 text-white text-sm font-medium rounded-md">
+                        <div class="flex items-center">
+                            <i class="fas fa-exclamation-circle mr-2"></i>
+                            <span id="newsletter-error-message">Ocorreu um erro ao processar sua solicitação.</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-    function subscribeUser() {
-        if (this.email) {
-            // Here you would typically send the email to your server
-            alert('Inscrito com o email: ' + this.email);
-            this.email = ''; // Clear the input after submission
-        } else {
-            alert('Por favor, insira um email válido.');
+    document.addEventListener('DOMContentLoaded', function() {
+        const newsletterForm = document.getElementById('newsletter-form');
+        const successMessage = document.getElementById('newsletter-success');
+        const errorMessage = document.getElementById('newsletter-error');
+        const errorMessageText = document.getElementById('newsletter-error-message');
+        
+        if (newsletterForm) {
+            newsletterForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const emailInput = document.getElementById('newsletter-email');
+                const submitButton = document.getElementById('newsletter-submit');
+                const formData = new FormData(newsletterForm);
+                
+                // Esconder mensagens de feedback antes de enviar
+                successMessage.classList.add('hidden');
+                errorMessage.classList.add('hidden');
+                
+                // Desativar o botão durante o envio
+                submitButton.disabled = true;
+                submitButton.innerHTML = 'Enviando...';
+                
+                fetch(newsletterForm.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Mensagem de sucesso
+                        successMessage.classList.remove('hidden');
+                        emailInput.value = ''; // Limpar o campo de email
+                        
+                        // Esconder a mensagem de sucesso após 5 segundos
+                        setTimeout(() => {
+                            successMessage.classList.add('hidden');
+                        }, 5000);
+                    } else {
+                        // Mensagem de erro
+                        errorMessageText.textContent = data.message;
+                        errorMessage.classList.remove('hidden');
+                        
+                        // Esconder a mensagem de erro após 8 segundos
+                        setTimeout(() => {
+                            errorMessage.classList.add('hidden');
+                        }, 8000);
+                    }
+                })
+                .catch(error => {
+                    // Erro no processamento
+                    errorMessageText.textContent = 'Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente.';
+                    errorMessage.classList.remove('hidden');
+                })
+                .finally(() => {
+                    // Reativar o botão
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = 'cadastre-se';
+                });
+            });
         }
-    }
+    });
     </script>
 
 </x-app-layout>

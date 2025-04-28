@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Site;
 
 use App\Http\Controllers\Controller;
 use App\Models\VinylMaster;
+use App\Models\VinylView;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class VinylDetailsController extends Controller
 {
@@ -62,6 +64,13 @@ class VinylDetailsController extends Controller
         
         // Garantir que temos no máximo 4 discos
         $relatedVinyls = $relatedVinyls->take(4);
+        
+        // Registrar a visualização do disco
+        VinylView::recordView(
+            $vinyl,
+            Auth::user(),
+            request()->ip()
+        );
 
         return view('site.vinyls.details', compact('vinyl', 'relatedVinyls'));
     }

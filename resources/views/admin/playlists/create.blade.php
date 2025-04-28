@@ -301,7 +301,7 @@ document.addEventListener('DOMContentLoaded', function() {
             searchResults.classList.remove('hidden');
             searchResults.innerHTML = '<div class="p-4 text-sm text-gray-500">Buscando...</div>';
 
-            fetch(`/admin/playlists/search-vinyls?query=${encodeURIComponent(query)}`)
+            fetch(`{{ route('admin.playlists.search-tracks') }}?query=${encodeURIComponent(query)}`)
                 .then(response => response.json())
                 .then(data => {
                     searchResults.innerHTML = '';

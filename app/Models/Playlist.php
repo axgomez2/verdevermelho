@@ -72,17 +72,17 @@ class Playlist extends Model
         }
 
         // Obtém a próxima posição
-        $position = $this->tracks()->max('position') + 1;
+        $position = $this->tracks()->max('position') ?? 0;
+        $position++;
 
         // Adiciona a faixa com relação polimórfica
-        $this->tracks()->create([
+        return $this->tracks()->create([
+            'playlist_id' => $this->id,
             'vinyl_master_id' => $vinylMaster->id,
             'trackable_type' => get_class($trackable),
             'trackable_id' => $trackable->id,
             'position' => $position
         ]);
-
-        return true;
     }
 
     public function removeTrack($trackId)

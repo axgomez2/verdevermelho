@@ -48,6 +48,9 @@ Route::get('/equipamentos', [EquipmentController::class, 'index'])->name('site.e
 Route::get('/equipamentos/{slug}', [EquipmentController::class, 'show'])->name('site.equipments.show');
 Route::get('/sobre-a-loja', [AboutController::class, 'index'])->name('site.about');
 
+// Newsletter
+Route::post('/newsletter/cadastro', [\App\Http\Controllers\Site\NewsletterController::class, 'store'])->name('site.newsletter.store');
+
 Route::get('/discos/categoria/{slug}', [VinylWebController::class, 'byCategory'])->name('vinyls.byCategory');
 
 // Playlist Routes
