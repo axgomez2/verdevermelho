@@ -78,6 +78,42 @@
                     </div>
                 @endif
 
+                <!-- Seção de Frete -->
+                <h4 class="mb-3">Informações de Frete</h4>
+                @if(session('shipping_postal_code') && session('selected_shipping_option'))
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="card-title mb-1">{{ session('selected_shipping_name') ?? 'Frete selecionado' }}</h5>
+                                    <p class="card-text text-muted mb-0">
+                                        <small>CEP: {{ substr_replace(session('shipping_postal_code'), '-', 5, 0) }}</small>
+                                    </p>
+                                    @if(isset($shippingOptions))
+                                        @foreach($shippingOptions as $option)
+                                            @if($option['id'] == session('selected_shipping_option'))
+                                                <p class="card-text text-muted mb-0">
+                                                    <small>Prazo de entrega: {{ $option['delivery_time'] }} dias úteis</small>
+                                                </p>
+                                            @endif
+                                        @endforeach
+                                    @endif
+                                </div>
+                                <div>
+                                    <span class="font-weight-bold">R$ {{ number_format(session('selected_shipping_price'), 2, ',', '.') }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <a href="{{ route('site.cart.index') }}#shipping-calculator" class="btn btn-outline-secondary btn-sm">Alterar Frete</a>
+                    </div>
+                @else
+                    <div class="alert alert-warning">
+                        Você ainda não selecionou uma opção de frete. <a href="{{ route('site.cart.index') }}#shipping-calculator">Calcule o frete</a> antes de continuar.
+                    </div>
+                @endif
+
                 <!-- Método de Pagamento -->
                 <h4 class="mb-3">Método de Pagamento</h4>
                 <div class="d-block my-3">

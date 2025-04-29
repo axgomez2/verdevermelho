@@ -124,6 +124,59 @@ class CartController extends Controller
         return redirect()->route('site.cart.index')->with('success', 'Item removido do carrinho.');
     }
 
+    public function updateShipping(Request $request)
+    {
+        $request->validate([
+            'shipping_option' => 'required'
+        ]);
+
+        $cart = $this->getOrCreateCart();
+        if ($cart->items->isEmpty()) {
+            return response()->json(['error' => 'Carrinho vazio'], 400);
+        }
+
+        $shippingOption = $request->shipping_option;
+        $shippingOptions = [];
+        
+        // Recuperar o CEP de entrega da sessão
+        $postalCode = session('shipping_postal_code');
+        if (!$postalCode) {
+            return response()->json(['error' => 'CEP não informado'], 400);
+        }
+
+        try {
+            $shippingOptions = $this->shippingService->calculateShipping($cart->items, $postalCode);
+            
+            // Encontrar a opção de frete selecionada
+            $selectedOption = collect($shippingOptions)->firstWhere('id', $shippingOption);
+            
+            if (!$selectedOption) {
+                return response()->json(['error' => 'Opção de frete inválida'], 400);
+            }
+            
+            // Armazenar na sessão
+            session([
+                'selected_shipping_option' => $shippingOption,
+                'selected_shipping_price' => $selectedOption['price'],
+                'selected_shipping_name' => $selectedOption['name']
+            ]);
+            
+            return response()->json([
+                'success' => true, 
+                'message' => 'Frete atualizado com sucesso',
+                'shipping' => $selectedOption['price'],
+                'total' => $cart->total + $selectedOption['price']
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Erro ao atualizar o frete:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json(['error' => 'Erro ao calcular o frete'], 500);
+        }
+    }
+
     public function getOrCreateCart()
     {
         if (Auth::check()) {

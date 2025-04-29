@@ -16,4 +16,5 @@ Route::prefix('carrinho')->group(function () {
     // Shipping routes
     Route::post('/postal-code', [ShippingController::class, 'updatePostalCode'])->name('site.cart.updatePostalCode');
     Route::post('/shipping/update', [ShippingController::class, 'updateShipping'])->name('site.cart.updateShipping');
+    Route::get('/shipping/options/{postalCode}', [ShippingController::class, 'getShippingOptions'])->name('site.cart.getShippingOptions');
 });

@@ -26,6 +26,14 @@ class CheckoutController extends Controller
         if (!$cart || $cart->items->isEmpty()) {
             return redirect()->route('site.cart.index')->with('error', 'Seu carrinho está vazio.');
         }
+        
+        // Verificar se um frete foi selecionado
+        $shippingPostalCode = session('shipping_postal_code');
+        $selectedShippingOption = session('selected_shipping_option');
+        
+        if (!$shippingPostalCode || !$selectedShippingOption) {
+            return redirect()->route('site.cart.index')->with('error', 'Por favor, calcule e selecione uma opção de frete antes de finalizar a compra.');
+        }
 
         // Obter a sessão do PagSeguro
         $sessionId = $this->pagSeguroService->getSessionId();
@@ -37,7 +45,7 @@ class CheckoutController extends Controller
         $subtotal = $cart->items->sum(function ($item) {
             return $item->quantity * $item->product->price;
         });
-        $shippingCost = session('shipping_cost', 0);
+        $shippingCost = session('selected_shipping_price', 0);
         $tax = $subtotal * 0.1; // 10% de imposto
         $total = $subtotal + $shippingCost + $tax;
 
@@ -50,6 +58,12 @@ class CheckoutController extends Controller
             'shipping_address_id' => 'required|exists:addresses,id',
             'payment_method' => 'required|string'
         ]);
+        
+        // Verificar se um frete foi selecionado
+        if (!session('shipping_postal_code') || !session('selected_shipping_option')) {
+            return redirect()->route('site.cart.index')
+                ->with('error', 'Por favor, calcule e selecione uma opção de frete antes de finalizar a compra.');
+        }
 
         $cart = $request->user()->cart ?? Cart::where('session_id', session()->getId())->first();
 
@@ -72,15 +86,37 @@ class CheckoutController extends Controller
             $subtotal = $cart->items->sum(function ($item) {
                 return $item->quantity * $item->product->price;
             });
-            $shippingCost = session('shipping_cost', 0);
+            $shippingCost = session('selected_shipping_price', 0);
             $tax = $subtotal * 0.1; // 10% de imposto
             $total = $subtotal + $shippingCost + $tax;
 
             // Criar pedido
+            // Buscar informações de frete selecionado na sessão
+            $shippingServiceId = session('selected_shipping_option');
+            $shippingServiceName = session('selected_shipping_name');
+            $shippingDeliveryTime = null;
+            
+            // Se temos um serviço de frete selecionado, vamos obter o tempo de entrega
+            if ($shippingServiceId) {
+                $postalCode = session('shipping_postal_code');
+                $melhorEnvioService = app(\App\Services\MelhorEnvioService::class);
+                $shippingOptions = $melhorEnvioService->calculateShipping($cart->items, $postalCode);
+                
+                if (!empty($shippingOptions)) {
+                    $selectedShipping = collect($shippingOptions)->firstWhere('id', $shippingServiceId);
+                    if ($selectedShipping) {
+                        $shippingDeliveryTime = $selectedShipping['delivery_time'] ?? null;
+                    }
+                }
+            }
+            
             $order = Order::create([
                 'user_id' => $request->user()->id,
                 'total' => $total,
                 'shipping_cost' => $shippingCost,
+                'shipping_service_id' => $shippingServiceId,
+                'shipping_service_name' => $shippingServiceName,
+                'shipping_delivery_time' => $shippingDeliveryTime,
                 'tax' => $tax,
                 'status' => 'pending',
                 'payment_status' => 'pending',
