@@ -41,10 +41,6 @@ Route::middleware('guest')->group(function () {
 
     // Rota específica para o Google
     Route::get('auth/google/redirect', [SocialiteController::class, 'redirectToProvider'])->name('auth.google')->defaults('provider', 'google');
-    
-    // Rotas para autenticação com WorkOS
-    Route::get('auth/workos/redirect', [\App\Http\Controllers\Auth\WorkOSController::class, 'redirectToWorkOS'])->name('workos.redirect');
-    Route::get('auth/workos/callback', [\App\Http\Controllers\Auth\WorkOSController::class, 'handleWorkOSCallback'])->name('workos.callback');
 });
 
 Route::middleware('auth')->group(function () {

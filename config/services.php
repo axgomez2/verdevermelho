@@ -59,12 +59,7 @@ return [
         'from_state' => env('MELHORENVIO_FROM_STATE'),
     ],
     
-    'workos' => [
-        'api_key' => env('WORKOS_API_KEY'),
-        'client_id' => env('WORKOS_CLIENT_ID'),
-        'redirect_uri' => env('WORKOS_REDIRECT_URI'),
-        'organization_id' => env('WORKOS_ORGANIZATION_ID'),
-    ],
+    // Configurações do WorkOS removidas
     
     'melhorenvio_shipping' => [
         'from_phone' => env('MELHORENVIO_FROM_PHONE'),

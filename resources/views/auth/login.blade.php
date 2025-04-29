@@ -80,18 +80,12 @@
                     <div class="mt-6 grid grid-cols-3 gap-3">
                         <!-- Add social login buttons here if needed -->
                     </div>
-                    <div class="flex space-x-3">
-                        <a href="{{ route('auth.google') }}" class="flex-1 flex items-center justify-center py-2 text-sm text-gray-500 border border-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-700 font-medium transform hover:scale-[1.03] transition-all duration-200">
+                    <div class="flex justify-center">
+                        <a href="{{ route('auth.google') }}" class="w-full flex items-center justify-center py-2 text-sm text-gray-500 border border-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-700 font-medium transform hover:scale-[1.03] transition-all duration-200">
                             <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M12.24 10.285V14.4h6.806c-.275 1.765-2.056 5.174-6.806 5.174-4.095 0-7.439-3.389-7.439-7.574s3.345-7.574 7.439-7.574c2.33 0 3.891.989 4.785 1.849l3.254-3.138C18.189 1.186 15.479 0 12.24 0c-6.635 0-12 5.365-12 12s5.365 12 12 12c6.926 0 11.52-4.869 11.52-11.726 0-.788-.085-1.39-.189-1.989H12.24z" fill="#4285F4"/>
                             </svg>
                             {{ __('Google') }}
-                        </a>
-                        <a href="{{ route('workos.redirect') }}" class="flex-1 flex items-center justify-center py-2 text-sm text-gray-500 border border-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-700 font-medium transform hover:scale-[1.03] transition-all duration-200">
-                            <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 5C13.66 5 15 6.34 15 8C15 9.66 13.66 11 12 11C10.34 11 9 9.66 9 8C9 6.34 10.34 5 12 5ZM12 19.2C9.5 19.2 7.29 17.92 6 15.98C6.03 13.99 10 12.9 12 12.9C13.99 12.9 17.97 13.99 18 15.98C16.71 17.92 14.5 19.2 12 19.2Z" fill="currentColor"/>
-                            </svg>
-                            {{ __('WorkOS') }}
                         </a>
                     </div>
                 </div>
