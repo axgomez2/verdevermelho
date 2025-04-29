@@ -149,7 +149,7 @@ return [
         Illuminate\Translation\TranslationServiceProvider::class,
         Illuminate\Validation\ValidationServiceProvider::class,
         Illuminate\View\ViewServiceProvider::class,
-        App\Providers\WorkOSServiceProvider::class,
+        // App\Providers\WorkOSServiceProvider::class, // Removido por não ser utilizado
 
         /*
          * Package Service Providers...
