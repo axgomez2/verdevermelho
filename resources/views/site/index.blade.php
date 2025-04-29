@@ -148,7 +148,7 @@
             </div>
 
             <!-- Featured Playlists -->
-            <div id="playlists">
+            <!-- <div id="playlists">
                 <div class="flex items-center justify-between mb-8">
                     <div>
                         <h2 class="text-3xl font-bold text-gray-900 mb-2">Dj Charts</h2>
@@ -204,8 +204,8 @@
                         </div>
                     @endforelse
                 </div>
-            </div>
-            
+            </div> -->
+          <hr>     
             <!-- Discos Aleatórios por Categoria -->
             @foreach($categoriesWithRandomVinyls as $categoryData)
             <div class="{{ $loop->first ? 'mb-20 mt-20' : 'mb-20' }}">

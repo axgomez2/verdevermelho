@@ -13,24 +13,44 @@ class MelhorEnvioService
     protected $fromPostalCode;
     protected $fromData;
     protected $config;
+    protected $isEnabled = false;
 
     public function __construct()
     {
         $this->config = config('melhorenvio');
-        $this->apiToken = $this->config['token'];
-        $this->baseUrl = $this->config['sandbox']
-            ? 'https://sandbox.melhorenvio.com.br/api/v2/'
-            : 'https://api.melhorenvio.com.br/v2/';
+        
+        // Verifica se as configurações necessárias estão disponíveis
+        if (isset($this->config['token']) && !empty($this->config['token']) && 
+            isset($this->config['from']['postal_code']) && !empty($this->config['from']['postal_code'])) {
+            $this->isEnabled = true;
+            $this->apiToken = $this->config['token'];
+            $this->baseUrl = $this->config['sandbox']
+                ? 'https://sandbox.melhorenvio.com.br/api/v2/'
+                : 'https://api.melhorenvio.com.br/v2/';
 
-        $this->fromPostalCode = $this->config['from']['postal_code'];
-        $this->fromData = $this->config['from'];
+            $this->fromPostalCode = $this->config['from']['postal_code'];
+            $this->fromData = $this->config['from'];
+        } else {
+            $this->apiToken = '';
+            $this->baseUrl = 'https://sandbox.melhorenvio.com.br/api/v2/';
+            $this->fromPostalCode = '';
+            $this->fromData = [];
+            
+            Log::warning('MelhorEnvio: Configuração incompleta. O serviço de frete está desativado.');
+        }
     }
 
     public function calculateShipping($cartItems, $toPostalCode)
     {
+        // Se o serviço não estiver configurado, retorna um array vazio
+        if (!$this->isEnabled) {
+            Log::info('MelhorEnvio: Serviço não configurado. Retornando opções de frete vazias.');
+            return [];
+        }
+        
         $cacheKey = "shipping_calc_{$toPostalCode}_" . md5(json_encode($cartItems));
 
-        return Cache::remember($cacheKey, now()->addMinutes($this->config['cache_time']), function () use ($cartItems, $toPostalCode) {
+        return Cache::remember($cacheKey, now()->addMinutes($this->config['cache_time'] ?? 30), function () use ($cartItems, $toPostalCode) {
             try {
                 $products = $this->formatCartItemsForShipping($cartItems);
                 $totalWeight = collect($products)->sum(function ($product) {
