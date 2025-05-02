@@ -95,31 +95,18 @@
           @endauth
 
           <!-- Cart -->
-          @auth
-          <button
-              type="button"
-              data-dropdown-toggle="cart-dropdown"
-              class="relative inline-flex items-center p-2 text-gray-300 hover:text-yellow-400"
-          >
-              <i class="fa-solid fa-cart-shopping text-xl"></i>
-              @if($cartCount > 0)
-                  <span
-                      data-cart-count
-                      class="absolute inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-black bg-white border-2 border-yellow-400 rounded-full -top-2 -right-2"
-                  >
-                      {{ $cartCount }}
-                  </span>
-              @endif
-          </button>
-          @else
-          <button
-              type="button"
+          <a
+              href="{{ route('site.cart.index') }}"
               class="relative inline-flex items-center p-2 text-sky-700 hover:text-sky-900"
-              onclick="showLoginToast()"
           >
               <i class="fa-solid fa-cart-shopping text-xl"></i>
-          </button>
-          @endauth
+              <span
+                  data-cart-count
+                  class="absolute inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-black bg-white border-2 border-yellow-400 rounded-full -top-2 -right-2 {{ isset($cartCount) && $cartCount > 0 ? '' : 'hidden' }}"
+              >
+                  {{ $cartCount ?? 0 }}
+              </span>
+          </a>
 
           @auth
           <!-- Dropdown do Usuário Autenticado -->

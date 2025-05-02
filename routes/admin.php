@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\CatStyleShopController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\NewsletterController;
 use App\Http\Controllers\Admin\PlaylistController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\TrackController;
@@ -103,10 +104,30 @@ Route::middleware(['auth', 'rolemanager:admin'])->group(function () {
         Route::put('/settings/brands/{brand}', [SettingsController::class, 'updateBrand'])->name('admin.settings.updateBrand');
         Route::delete('/settings/brands/{brand}', [SettingsController::class, 'deleteBrand'])->name('admin.settings.deleteBrand');
 
+        // Product types routes
+        Route::post('/settings/product-types', [SettingsController::class, 'storeProductType'])->name('admin.settings.storeProductType');
+        Route::put('/settings/product-types/{productType}', [SettingsController::class, 'updateProductType'])->name('admin.settings.updateProductType');
+        Route::delete('/settings/product-types/{productType}', [SettingsController::class, 'deleteProductType'])->name('admin.settings.deleteProductType');
+
         // Equipment Category routes
         Route::post('/settings/equipment-categories', [SettingsController::class, 'storeEquipmentCategory'])->name('admin.settings.storeEquipmentCategory');
         Route::put('/settings/equipment-categories/{equipmentCategory}', [SettingsController::class, 'updateEquipmentCategory'])->name('admin.settings.updateEquipmentCategory');
         Route::delete('/settings/equipment-categories/{equipmentCategory}', [SettingsController::class, 'deleteEquipmentCategory'])->name('admin.settings.deleteEquipmentCategory');
+
+        // Relatórios
+        Route::prefix('relatorios')->group(function () {
+            Route::get('/', [ReportController::class, 'index'])->name('admin.reports.index');
+            Route::get('/mais-vistos', [ReportController::class, 'mostViewed'])->name('admin.reports.most-viewed');
+            Route::get('/disco/{id}', [ReportController::class, 'vinylDetails'])->name('admin.reports.vinyl-details');
+            
+            // Mailing/Newsletter
+            Route::get('/mailing', [NewsletterController::class, 'index'])->name('admin.newsletter.index');
+            Route::get('/mailing/enviar', [NewsletterController::class, 'compose'])->name('admin.newsletter.compose');
+            Route::post('/mailing/enviar', [NewsletterController::class, 'send'])->name('admin.newsletter.send');
+            Route::get('/mailing/buscar-produtos', [NewsletterController::class, 'searchProducts'])->name('admin.newsletter.search-products');
+            Route::put('/mailing/{newsletter}/toggle', [NewsletterController::class, 'toggleActive'])->name('admin.newsletter.toggle');
+            Route::delete('/mailing/{newsletter}', [NewsletterController::class, 'destroy'])->name('admin.newsletter.destroy');
+        });
 
         // Customer routes
         Route::get('/clientes', [CustomerController::class, 'index'])->name('admin.customers.index');
@@ -114,15 +135,10 @@ Route::middleware(['auth', 'rolemanager:admin'])->group(function () {
         Route::get('/cliente/{customer}/editar', [CustomerController::class, 'edit'])->name('admin.customers.edit');
         Route::put('/cliente/{customer}', [CustomerController::class, 'update'])->name('admin.customers.update');
 
-         // Shipping Management
-        Route::get('/shipping', [ShippingController::class, 'index'])->name('admin.shipping.index');
-        Route::post('/shipping/{order}/generate-label', [ShippingController::class, 'generateLabel'])->name('admin.shipping.generate-label');
-        Route::get('/shipping/{order}/print-label', [ShippingController::class, 'printLabel'])->name('admin.shipping.print-label');
-        Route::get('/shipping/{order}/track', [ShippingController::class, 'trackShipment'])->name('admin.shipping.track');
-        
-        // Relatórios
-        Route::get('/relatorios', [ReportController::class, 'index'])->name('admin.reports.index');
-        Route::get('/relatorios/discos-mais-vistos', [ReportController::class, 'mostViewed'])->name('admin.reports.most-viewed');
-        Route::get('/relatorios/disco/{id}', [ReportController::class, 'vinylDetails'])->name('admin.reports.vinyl-details');
+        // Shipping Management
+        Route::get('/envios', [ShippingController::class, 'index'])->name('admin.shipping.index');
+        Route::post('/envios/{order}/generate-label', [ShippingController::class, 'generateLabel'])->name('admin.shipping.generate-label');
+        Route::get('/envios/{order}/print-label', [ShippingController::class, 'printLabel'])->name('admin.shipping.print-label');
+        Route::get('/envios/{order}/track', [ShippingController::class, 'trackShipment'])->name('admin.shipping.track');
     });
 });

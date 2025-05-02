@@ -66,15 +66,18 @@
                 </div>
                 <button
                     type="button"
-                    title="{{ auth()->check() && $vinyl->inWishlist() ? 'Remover dos favoritos' : (auth()->check() && !$vinyl->vinylSec->quantity > 0 && $vinyl->inWantlist() ? 'Remover da wantlist' : 'Adicionar aos favoritos') }}"
+                    title="{{ $vinyl->vinylSec->quantity > 0 ? (auth()->check() && $vinyl->inWishlist() ? 'Remover dos favoritos' : 'Adicionar aos favoritos') : (auth()->check() && $vinyl->inWantlist() ? 'Remover da wantlist' : 'Adicionar à wantlist') }}"
                     class="wishlist-button text-gray-400 hover:text-red-500 focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-lg text-sm p-2"
                     data-product-id="{{ $vinyl->id }}"
                     data-product-type="{{ get_class($vinyl) }}"
                     data-is-available="{{ json_encode($vinyl->vinylSec->quantity > 0) }}"
-                    data-in-wishlist="{{ json_encode(auth()->check() && $vinyl->inWishlist()) }}"
-                    data-in-wantlist="{{ json_encode(auth()->check() && !$vinyl->vinylSec->quantity > 0 && $vinyl->inWantlist()) }}"
+                    data-in-wishlist="{{ json_encode(auth()->check() && ($vinyl->vinylSec->quantity > 0 ? $vinyl->inWishlist() : $vinyl->inWantlist())) }}"
                 >
-                    <i class="fas {{ auth()->check() && $vinyl->inWantlist() ? 'fa-flag' : 'fa-heart' }} {{ (auth()->check() && $vinyl->inWishlist() || auth()->check() && $vinyl->inWantlist()) ? 'text-red-500' : '' }}"></i>
+                    @if($vinyl->vinylSec->quantity > 0)
+                        <i class="fas fa-heart {{ auth()->check() && $vinyl->inWishlist() ? 'text-red-500' : '' }}"></i>
+                    @else
+                        <i class="fas fa-flag {{ auth()->check() && $vinyl->inWantlist() ? 'text-red-500' : '' }}"></i>
+                    @endif
                 </button>
             </div>
             <div class="mt-4">

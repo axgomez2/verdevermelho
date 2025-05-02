@@ -50,91 +50,175 @@ class MelhorEnvioService
         
         $cacheKey = "shipping_calc_{$toPostalCode}_" . md5(json_encode($cartItems));
 
-        return Cache::remember($cacheKey, now()->addMinutes($this->config['cache_time'] ?? 30), function () use ($cartItems, $toPostalCode) {
-            try {
-                $products = $this->formatCartItemsForShipping($cartItems);
-                $totalWeight = collect($products)->sum(function ($product) {
-                    return $product['weight'] * $product['quantity'];
-                });
-                $maxDimensions = collect($products)->reduce(function ($carry, $product) {
-                    return [
-                        'width' => max($carry['width'], $product['width']),
-                        'height' => max($carry['height'], $product['height']),
-                        'length' => max($carry['length'], $product['length'])
-                    ];
-                }, ['width' => 0, 'height' => 0, 'length' => 0]);
-
-                $totalValue = collect($products)->sum(function ($product) {
-                    return $product['insurance_value'] * $product['quantity'];
-                });
-
-                $payload = [
-                    'from' => array_filter($this->fromData),
-                    'to' => [
-                        'postal_code' => $toPostalCode,
-                    ],
-                    'package' => [
-                        'width' => $maxDimensions['width'],
-                        'height' => $maxDimensions['height'],
-                        'length' => $maxDimensions['length'],
-                        'weight' => $totalWeight
-                    ],
-                    'options' => [
-                        'insurance_value' => $totalValue,
-                        'receipt' => $this->config['defaults']['receipt'],
-                        'own_hand' => $this->config['defaults']['own_hand'],
-                        'collect' => $this->config['defaults']['collect']
-                    ],
-                    'services' => implode(',', array_keys($this->config['services']))
-                ];
-
-                Log::info('Calculando frete Melhor Envio:', ['payload' => $payload]);
-
-                $response = Http::withHeaders([
-                    'Accept' => 'application/json',
-                    'Content-Type' => 'application/json',
-                    'Authorization' => 'Bearer ' . $this->apiToken,
-                ])->post($this->baseUrl . 'me/shipment/calculate', $payload);
-
-                if ($response->successful()) {
-                    return $this->formatShippingOptions($response->json());
-                }
-
-                Log::error('Erro na API do Melhor Envio:', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                ]);
-
-                return [];
-            } catch (\Exception $e) {
-                Log::error('Erro ao calcular frete:', [
-                    'message' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
-                ]);
+        // Desabilitar o cache temporariamente para debug
+        //return Cache::remember($cacheKey, now()->addMinutes($this->config['cache_time'] ?? 30), function () use ($cartItems, $toPostalCode) {
+        try {
+            $products = $this->formatCartItemsForShipping($cartItems);
+            
+            if (empty($products)) {
+                Log::warning('Nenhum produto válido para cálculo de frete');
                 return [];
             }
-        });
+            
+            // Garantir que o peso total nunca seja zero
+            $totalWeight = max(0.1, collect($products)->sum(function ($product) {
+                return $product['weight'] * $product['quantity'];
+            }));
+            
+            // Obter as maiores dimensões entre todos os produtos
+            $maxDimensions = collect($products)->reduce(function ($carry, $product) {
+                return [
+                    'width' => max($carry['width'], $product['width']),
+                    'height' => max($carry['height'], $product['height']),
+                    'length' => max($carry['length'], $product['length'])
+                ];
+            }, ['width' => 11, 'height' => 11, 'length' => 11]); // Dimensões mínimas seguras
+
+            // Garantir que todas as dimensões sejam pelo menos 11cm (mínimo exigido)
+            $maxDimensions['width'] = max(11, $maxDimensions['width']);
+            $maxDimensions['height'] = max(11, $maxDimensions['height']);
+            $maxDimensions['length'] = max(11, $maxDimensions['length']);
+            
+            $totalValue = max(1, collect($products)->sum(function ($product) {
+                return $product['insurance_value'] * $product['quantity'];
+            }));
+
+            // Tratar CEP
+            $toPostalCode = preg_replace('/[^0-9]/', '', $toPostalCode);
+            
+            $payload = [
+                'from' => array_filter($this->fromData),
+                'to' => [
+                    'postal_code' => $toPostalCode,
+                ],
+                'package' => [
+                    'width' => $maxDimensions['width'],
+                    'height' => $maxDimensions['height'],
+                    'length' => $maxDimensions['length'],
+                    'weight' => $totalWeight
+                ],
+                'options' => [
+                    'insurance_value' => $totalValue,
+                    'receipt' => false, // Simplificando as opções
+                    'own_hand' => false,
+                    'collect' => false
+                ],
+                'services' => implode(',', array_keys($this->config['services']))
+            ];
+
+            Log::info('Calculando frete Melhor Envio:', ['payload' => $payload]);
+
+            $response = Http::withHeaders([
+                'Accept' => 'application/json',
+                'Content-Type' => 'application/json',
+                'Authorization' => 'Bearer ' . $this->apiToken,
+            ])->post($this->baseUrl . 'me/shipment/calculate', $payload);
+
+            if ($response->successful()) {
+                $result = $this->formatShippingOptions($response->json());
+                Log::info('Opções de frete calculadas com sucesso', ['count' => count($result)]);
+                return $result;
+            }
+
+            Log::error('Erro na API do Melhor Envio:', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            // Em ambiente de desenvolvimento/sandbox, retorna opções fictícias caso a API falhe
+            if ($this->config['sandbox']) {
+                Log::info('Retornando opções fictícias de frete (ambiente sandbox)');
+                return [
+                    [
+                        'id' => 1,
+                        'name' => 'PAC (Simulado)',
+                        'price' => 25.90,
+                        'delivery_time' => '5 a 7 dias úteis',
+                        'company' => 'Correios'
+                    ],
+                    [
+                        'id' => 2,
+                        'name' => 'SEDEX (Simulado)',
+                        'price' => 45.50,
+                        'delivery_time' => '1 a 3 dias úteis',
+                        'company' => 'Correios'
+                    ]
+                ];
+            }
+
+            return [];
+        } catch (\Exception $e) {
+            Log::error('Erro ao calcular frete:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return [];
+        }
+        //});
     }
 
     protected function formatCartItemsForShipping($cartItems)
     {
         $defaults = $this->config['defaults']['dimensions'];
-
-        return $cartItems->map(function ($item) use ($defaults) {
-            $product = $item->product;
-            $dimensions = $product->dimensions;
-            $weight = $product->weight;
-
-            return [
-                'id' => $product->id,
-                'width' => $dimensions ? $dimensions->width : $defaults['width'],
-                'height' => $dimensions ? $dimensions->height : $defaults['height'],
-                'length' => $dimensions ? $dimensions->length : $defaults['length'],
-                'weight' => $weight ? $weight->value : $defaults['weight'],
-                'insurance_value' => $product->price,
-                'quantity' => $item->quantity,
-            ];
-        })->toArray();
+        $formattedItems = [];
+        
+        Log::info('Formatando itens do carrinho para envio:', ['item_count' => count($cartItems)]);
+        
+        foreach ($cartItems as $item) {
+            try {
+                $product = $item->product;
+                
+                // Definir valores padrão para dimensões e peso
+                $width = $defaults['width'];
+                $height = $defaults['height']; 
+                $length = $defaults['length'];
+                $weight = $defaults['weight'];
+                
+                // Tentar obter as dimensões a partir do produto ou vinylSec
+                if (isset($product->productable) && isset($product->productable->vinylSec)) {
+                    // Dimensões padrão para discos de vinil
+                    $width = 31;  // 12 polegadas = ~31cm
+                    $height = 31;
+                    $length = 1;   // espessura típica
+                    $weight = 0.2; // peso típico em kg
+                }
+                
+                // Valores seguros
+                $formattedItems[] = [
+                    'id' => $product->id,
+                    'width' => $width,
+                    'height' => $height, 
+                    'length' => $length,
+                    'weight' => $weight,
+                    'insurance_value' => $product->price,
+                    'quantity' => $item->quantity,
+                ];
+                
+                Log::info('Item formatado com sucesso', [
+                    'product_id' => $product->id,
+                    'price' => $product->price,
+                    'quantity' => $item->quantity
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Erro ao formatar item para envio:', [
+                    'message' => $e->getMessage(),
+                    'item' => $item
+                ]);
+                
+                // Adicionar um item com dimensões padrão para que o cálculo não falhe
+                $formattedItems[] = [
+                    'id' => 'fallback',
+                    'width' => $defaults['width'],
+                    'height' => $defaults['height'],
+                    'length' => $defaults['length'],
+                    'weight' => $defaults['weight'],
+                    'insurance_value' => 100, // valor padrão
+                    'quantity' => 1,
+                ];
+            }
+        }
+        
+        return $formattedItems;
     }
 
     protected function formatShippingOptions($response)

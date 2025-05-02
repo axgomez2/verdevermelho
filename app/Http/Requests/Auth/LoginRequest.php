@@ -48,6 +48,23 @@ class LoginRequest extends FormRequest
                 'email' => trans('auth.failed'),
             ]);
         }
+        
+        // Após login bem-sucedido, verificar se há um carrinho na sessão para migrar
+        // Esta lógica também está no método getOrCreateCart(), mas incluímos aqui
+        // para garantir que os itens do carrinho local (localStorage) sejam migrados
+        // logo após o login
+        if ($this->has('cart_data')) {
+            try {
+                $cartData = json_decode($this->input('cart_data'), true);
+                if (is_array($cartData) && count($cartData) > 0) {
+                    // Importar itens do localStorage para o carrinho do usuário
+                    app(\App\Http\Controllers\Site\CartController::class)->importLocalCart($cartData);
+                }
+            } catch (\Exception $e) {
+                // Log do erro, mas não interrompe o processo de login
+                \Illuminate\Support\Facades\Log::error('Erro ao importar carrinho local: ' . $e->getMessage());
+            }
+        }
 
         RateLimiter::clear($this->throttleKey());
     }

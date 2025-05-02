@@ -36,7 +36,28 @@ class CartItemController extends Controller
 
             $product = Product::findOrFail($request->product_id);
             Log::info('Produto encontrado', ['product_id' => $product->id]);
-
+            
+            // Verificar disponibilidade em estoque
+            $availableQuantity = 0;
+            
+            // Verificar se é um vinil com estoque associado
+            if ($product->productable_type === 'App\\Models\\Vinyl' && $product->productable && $product->productable->vinylSec) {
+                $availableQuantity = $product->productable->vinylSec->quantity;
+                Log::info('Quantidade disponível', ['quantity' => $availableQuantity]);
+            }
+            
+            // Verificar se há item existente no carrinho
+            $existingItem = $cart->items()->where('product_id', $product->id)->first();
+            $currentQuantity = $existingItem ? $existingItem->quantity : 0;
+            $newTotalQuantity = $currentQuantity + $request->quantity;
+            
+            // Verificar se há estoque suficiente
+            if ($availableQuantity > 0 && $newTotalQuantity > $availableQuantity) {
+                // Não há estoque suficiente
+                throw new \Exception("Estoque insuficiente. Apenas {$availableQuantity} unidade(s) disponível(is).");
+            }
+            
+            // Atualizar ou criar o item
             $cartItem = $cart->items()->updateOrCreate(
                 ['product_id' => $product->id],
                 ['quantity' => DB::raw('quantity + ' . $request->quantity)]

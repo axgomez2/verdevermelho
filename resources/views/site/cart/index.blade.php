@@ -4,29 +4,87 @@
             <h2 class="text-xl font-semibold text-gray-900 sm:text-2xl">Carrinho de Compras</h2>
 
             <div class="mt-6 sm:mt-8 md:gap-6 lg:flex lg:items-start xl:gap-8">
-                <div class="mx-auto w-full flex-none lg:max-w-2xl xl:max-w-4xl">
+                <div class="mx-auto w-full lg:w-7/12 flex-none">
                     <div class="space-y-6">
                         @foreach($cart->items as $item)
                             <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm md:p-6">
-                                <div class="space-y-4 md:flex md:items-center md:justify-between md:gap-6 md:space-y-0">
+                                <div class="space-y-4 md:flex md:items-center md:justify-between md:gap-6 md:space-y-0 flex-wrap">
                                     <a href="#" class="shrink-0 md:order-1">
-                                        <img class="h-20 w-20 object-cover" src="{{ $item->product->productable->vinylSec->cover_image ?? asset('images/placeholder.jpg') }}" alt="{{ $item->product->productable->title }}">
+                                        @php
+                                            // Tentar encontrar o caminho correto da imagem
+                                            $coverImage = null;
+                                            
+                                            // Verificar se temos vinylSec com cover_image
+                                            if (isset($item->product) && isset($item->product->productable) && 
+                                                isset($item->product->productable->vinylSec) && 
+                                                !empty($item->product->productable->vinylSec->cover_image)) {
+                                                
+                                                $coverImage = asset('storage/' . $item->product->productable->vinylSec->cover_image);
+                                            }
+                                            // Verificar se temos vinyl com cover_image diretamente
+                                            elseif (isset($item->product) && isset($item->product->productable) && 
+                                                   !empty($item->product->productable->cover_image)) {
+                                                
+                                                $coverImage = asset('storage/' . $item->product->productable->cover_image);
+                                            }
+                                            // Verificar se temos vinylMaster com cover_image
+                                            elseif (isset($item->product) && isset($item->product->productable) && 
+                                                   isset($item->product->productable->vinylMaster) && 
+                                                   !empty($item->product->productable->vinylMaster->cover_image)) {
+                                                
+                                                $coverImage = asset('storage/' . $item->product->productable->vinylMaster->cover_image);
+                                            }
+                                            // Caso não encontre nenhuma imagem, usar placeholder
+                                            else {
+                                                $coverImage = asset('assets/images/placeholder.jpg');
+                                            }
+                                        @endphp
+                                        
+                                        <img class="h-20 w-20 object-cover" 
+                                            src="{{ $coverImage }}" 
+                                            alt="{{ $item->product->productable->title ?? 'Produto' }}">
                                     </a>
 
                                     <label for="counter-input-{{ $item->id }}" class="sr-only">Escolher quantidade:</label>
                                     <div class="flex items-center justify-between md:order-3 md:justify-end">
                                         <div class="flex items-center">
+                                            @php
+                                                // Obter a quantidade disponível em estoque
+                                                $stockQuantity = 0;
+                                                if (isset($item->product) && isset($item->product->productable) && 
+                                                    isset($item->product->productable->vinylSec) && 
+                                                    isset($item->product->productable->vinylSec->quantity)) {
+                                                    $stockQuantity = $item->product->productable->vinylSec->quantity;
+                                                }
+                                            @endphp
                                             <button type="button" data-item-id="{{ $item->id }}" class="decrement-button inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-gray-300 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-100">
                                                 <svg class="h-2.5 w-2.5 text-gray-900" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 2">
                                                     <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 1h16" />
                                                 </svg>
                                             </button>
-                                            <input type="text" id="counter-input-{{ $item->id }}" data-item-id="{{ $item->id }}" class="quantity-input w-10 shrink-0 border-0 bg-transparent text-center text-sm font-medium text-gray-900 focus:outline-none focus:ring-0" value="{{ $item->quantity }}" required />
-                                            <button type="button" data-item-id="{{ $item->id }}" class="increment-button inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-gray-300 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-100">
+                                            <input type="text" 
+                                                id="counter-input-{{ $item->id }}" 
+                                                data-item-id="{{ $item->id }}" 
+                                                data-max-quantity="{{ $stockQuantity }}" 
+                                                class="quantity-input w-10 shrink-0 border-0 bg-transparent text-center text-sm font-medium text-gray-900 focus:outline-none focus:ring-0" 
+                                                value="{{ $item->quantity }}" 
+                                                min="1" 
+                                                max="{{ $stockQuantity }}" 
+                                                required 
+                                            />
+                                            <button type="button" 
+                                                data-item-id="{{ $item->id }}" 
+                                                data-max-quantity="{{ $stockQuantity }}" 
+                                                class="increment-button inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-gray-300 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-100 {{ $item->quantity >= $stockQuantity ? 'opacity-50 cursor-not-allowed' : '' }}">
                                                 <svg class="h-2.5 w-2.5 text-gray-900" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
                                                     <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 1v16M1 9h16" />
                                                 </svg>
                                             </button>
+                                            @if($stockQuantity > 0)
+                                                <span class="ml-2 text-xs text-gray-500">{{ $stockQuantity }} em estoque</span>
+                                            @else
+                                                <span class="ml-2 text-xs text-red-500">Indisponível</span>
+                                            @endif
                                         </div>
                                         <div class="text-end md:order-4 md:w-32">
                                             <p class="text-base font-bold text-gray-900">R$ {{ number_format($item->product->price * $item->quantity, 2, ',', '.') }}</p>
@@ -52,7 +110,7 @@
                     </div>
                 </div>
 
-                <div class="mx-auto mt-6 max-w-4xl flex-1 space-y-6 lg:mt-0 lg:w-full">
+                <div class="mx-auto mt-6 flex-1 space-y-6 lg:mt-0 lg:w-5/12">
                     <div class="space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
                         <p class="text-xl font-semibold text-gray-900">Resumo do Pedido</p>
 
@@ -107,10 +165,7 @@
                                     </dd>
                                 </dl>
 
-                                <dl class="flex items-center justify-between gap-4">
-                                    <dt class="text-base font-normal text-gray-500">Impostos</dt>
-                                    <dd class="text-base font-medium text-gray-900">R$ {{ number_format($tax, 2, ',', '.') }}</dd>
-                                </dl>
+                                <!-- Impostos removidos conforme solicitado -->
                             </div>
 
                             <dl class="flex items-center justify-between gap-4 border-t border-gray-200 pt-2">
@@ -119,9 +174,48 @@
                             </dl>
                         </div>
 
-                        <a href="{{ route('site.checkout.index') }}" class="flex w-full items-center justify-center rounded-lg bg-primary-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-800 focus:outline-none focus:ring-4 focus:ring-primary-300">
-                            Finalizar Compra
-                        </a>
+                        @if(isset($isLoggedIn) && $isLoggedIn)
+                            @if(is_object($address))
+                                <a href="{{ route('site.checkout.index') }}" class="flex w-full items-center justify-center rounded-lg bg-primary-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-800 focus:outline-none focus:ring-4 focus:ring-primary-300 mb-3">
+                                    <i class="fas fa-shopping-cart mr-2"></i> Finalizar Compra
+                                </a>
+                                
+                                <button 
+                                    type="button" 
+                                    id="whatsapp-checkout" 
+                                    data-whatsapp-number="5511999999999" {{-- Substitua pelo número real da loja --}}
+                                    class="flex w-full items-center justify-center rounded-lg bg-green-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-300"
+                                >
+                                    <i class="fab fa-whatsapp mr-2"></i> Finalizar compra pelo WhatsApp
+                                </button>
+                            @else
+                                <div class="bg-yellow-50 p-3 rounded-lg mb-3 border border-yellow-200">
+                                    <p class="text-yellow-700 text-sm mb-2"><i class="fas fa-exclamation-triangle mr-1"></i> É necessário adicionar um endereço para finalizar a compra</p>
+                                </div>
+                                <button type="button" onclick="openAddressModal()" class="flex w-full items-center justify-center rounded-lg bg-primary-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-800 focus:outline-none focus:ring-4 focus:ring-primary-300">
+                                    <i class="fas fa-map-marker-alt mr-2"></i> Adicionar Endereço
+                                </button>
+                            @endif
+                        @else
+                            <div class="border-t border-gray-200 pt-4 pb-2 mb-2">
+                                <div class="text-center mb-4">
+                                    <div class="text-lg font-medium text-gray-900 mb-2">Faça login para finalizar sua compra</div>
+                                    <p class="text-sm text-gray-600 mb-4">Seus itens serão preservados quando você fizer login</p>
+                                    
+                                    <button type="button" 
+                                        onclick="window.dispatchEvent(new CustomEvent('open-login-modal'))"
+                                        class="flex w-full items-center justify-center rounded-lg bg-primary-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-800 focus:outline-none focus:ring-4 focus:ring-primary-300 mb-3">
+                                        <i class="fas fa-user-circle mr-2"></i> Fazer Login
+                                    </button>
+                                    
+                                    <button type="button" 
+                                        onclick="window.dispatchEvent(new CustomEvent('open-register-modal'))"
+                                        class="flex w-full items-center justify-center rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200">
+                                        <i class="fas fa-user-plus mr-2"></i> Criar Nova Conta
+                                    </button>
+                                </div>
+                            </div>
+                        @endif
 
                         <div class="flex items-center justify-center gap-2">
                             <span class="text-sm font-normal text-gray-500">ou</span>
@@ -147,7 +241,114 @@
 
     @push('scripts')
     <script>
+        // Função para enviar pedido via WhatsApp
+        function formatCartForWhatsApp() {
+            // Obter informações do cliente
+            const clientName = "{{ Auth::user() ? Auth::user()->name : 'Cliente' }}";
+            const clientEmail = "{{ Auth::user() ? Auth::user()->email : '' }}";
+            
+            // Obter informações do endereço
+            @if(is_object($address))
+            const addressStreet = "{{ $address->street }}";
+            const addressNumber = "{{ $address->number }}";
+            const addressComplement = "{{ $address->complement ?? '' }}";
+            const addressNeighborhood = "{{ $address->neighborhood }}";
+            const addressCity = "{{ $address->city }}";
+            const addressState = "{{ $address->state }}";
+            const addressZipCode = "{{ $address->zip_code }}";
+            @else
+            const addressInfo = "Sem endereço cadastrado";
+            @endif
+            
+            // Obter informações de frete selecionado
+            const shippingSelect = document.getElementById('shipping_option');
+            let shippingInfo = "Frete não selecionado";
+            if (shippingSelect) {
+                const selectedOption = shippingSelect.options[shippingSelect.selectedIndex];
+                if (selectedOption) {
+                    shippingInfo = selectedOption.text;
+                }
+            }
+            
+            // Formatar items do carrinho
+            let cartItems = [];
+            @foreach($cart->items as $item)
+                cartItems.push({
+                    title: "{{ $item->product->productable->title }}",
+                    quantity: {{ $item->quantity }},
+                    price: {{ $item->product->price }},
+                    total: {{ $item->product->price * $item->quantity }}
+                });
+            @endforeach
+            
+            // Valores do pedido
+            const subtotal = {{ $subtotal }};
+            const shipping = {{ $shipping }};
+            const total = {{ $total }};
+            
+            // Construir a mensagem
+            let message = "*Novo Pedido da Loja Ver&Vermelho*\n\n";
+            
+            // Informações do cliente
+            message += "*Informações do Cliente:*\n";
+            message += `Nome: ${clientName}\n`;
+            message += `Email: ${clientEmail}\n\n`;
+            
+            // Endereço
+            message += "*Informações de Entrega:*\n";
+            @if(is_object($address))
+            message += `Endereço: ${addressStreet}, ${addressNumber}\n`;
+            if (addressComplement) {
+                message += `Complemento: ${addressComplement}\n`;
+            }
+            message += `Bairro: ${addressNeighborhood}\n`;
+            message += `Cidade: ${addressCity}/${addressState}\n`;
+            message += `CEP: ${addressZipCode}\n`;
+            @else
+            message += `${addressInfo}\n`;
+            @endif
+            message += `\n`;
+            
+            // Itens do pedido
+            message += "*Itens do Pedido:*\n";
+            cartItems.forEach((item, index) => {
+                message += `${index + 1}. ${item.title} (${item.quantity}x) - R$ ${item.price.toFixed(2).replace('.', ',')} = R$ ${item.total.toFixed(2).replace('.', ',')}\n`;
+            });
+            message += "\n";
+            
+            // Resumo do pedido
+            message += "*Resumo do Pedido:*\n";
+            message += `Subtotal: R$ ${subtotal.toFixed(2).replace('.', ',')}\n`;
+            message += `Frete: R$ ${shipping.toFixed(2).replace('.', ',')} (${shippingInfo})\n`;
+            message += `*Total: R$ ${total.toFixed(2).replace('.', ',')}*\n\n`;
+            
+            message += "Gostaria de confirmar este pedido. Como posso pagar?";
+            
+            return encodeURIComponent(message);
+        }
+        
         document.addEventListener('DOMContentLoaded', function() {
+            // Configurar botão de finalização via WhatsApp
+            const whatsappButton = document.getElementById('whatsapp-checkout');
+            if (whatsappButton) {
+                whatsappButton.addEventListener('click', function() {
+                    // Obter número de WhatsApp da loja do atributo data
+                    const storeWhatsApp = this.getAttribute('data-whatsapp-number') || '5511999999999';
+                    
+                    // Formatar a mensagem do pedido
+                    const message = formatCartForWhatsApp();
+                    
+                    // Verificar se há itens no carrinho
+                    if (!message) {
+                        alert('Não há itens no seu carrinho ou ocorreu um erro ao preparar o pedido.');
+                        return;
+                    }
+                    
+                    // Abrir chat no WhatsApp
+                    window.open(`https://api.whatsapp.com/send?phone=${storeWhatsApp}&text=${message}`, '_blank');
+                });
+            }
+            
             const quantityInputs = document.querySelectorAll('.quantity-input');
             const incrementButtons = document.querySelectorAll('.increment-button');
             const decrementButtons = document.querySelectorAll('.decrement-button');
@@ -172,7 +373,19 @@
             quantityInputs.forEach(input => {
                 input.addEventListener('change', function() {
                     const itemId = this.dataset.itemId;
-                    const newQuantity = parseInt(this.value);
+                    const maxQuantity = parseInt(this.dataset.maxQuantity) || 1;
+                    let newQuantity = parseInt(this.value);
+
+                    // Validar limites de estoque
+                    if (isNaN(newQuantity) || newQuantity < 1) {
+                        newQuantity = 1;
+                        this.value = 1;
+                    } else if (maxQuantity > 0 && newQuantity > maxQuantity) {
+                        newQuantity = maxQuantity;
+                        this.value = maxQuantity;
+                        window.showToast(`Quantidade limitada a ${maxQuantity} unidade(s) em estoque.`, 'warning');
+                    }
+
                     if (newQuantity > 0) {
                         updateQuantity(itemId, newQuantity);
                     }
@@ -182,8 +395,17 @@
             incrementButtons.forEach(button => {
                 button.addEventListener('click', function() {
                     const itemId = this.dataset.itemId;
-                    const input = document.querySelector(`#counter-input-${itemId}`);
-                    const newQuantity = parseInt(input.value) + 1;
+                    const maxQuantity = parseInt(this.dataset.maxQuantity) || 1;
+                    const input = document.getElementById(`counter-input-${itemId}`);
+                    const currentQuantity = parseInt(input.value);
+                    
+                    // Verificar se não excede o estoque
+                    if (maxQuantity > 0 && currentQuantity >= maxQuantity) {
+                        window.showToast(`Quantidade limitada a ${maxQuantity} unidade(s) em estoque.`, 'warning');
+                        return; // Não permite aumentar além do estoque
+                    }
+                    
+                    const newQuantity = currentQuantity + 1;
                     input.value = newQuantity;
                     updateQuantity(itemId, newQuantity);
                 });
@@ -192,10 +414,14 @@
             decrementButtons.forEach(button => {
                 button.addEventListener('click', function() {
                     const itemId = this.dataset.itemId;
-                    const input = document.querySelector(`#counter-input-${itemId}`);
-                    const newQuantity = Math.max(1, parseInt(input.value) - 1);
-                    input.value = newQuantity;
-                    updateQuantity(itemId, newQuantity);
+                    const input = document.getElementById(`counter-input-${itemId}`);
+                    const currentQuantity = parseInt(input.value);
+
+                    if (currentQuantity > 1) {
+                        const newQuantity = currentQuantity - 1;
+                        input.value = newQuantity;
+                        updateQuantity(itemId, newQuantity);
+                    }
                 });
             });
 

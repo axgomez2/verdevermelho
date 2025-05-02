@@ -13,7 +13,7 @@ class DecodeMelhorEnvioToken extends Command
     {
         $this->info('Decoding Melhor Envio token...');
 
-        $token = config('services.melhorenvio.token');
+        $token = config('melhorenvio.token');
 
         // Split token into parts
         $tokenParts = explode('.', $token);
@@ -35,13 +35,23 @@ class DecodeMelhorEnvioToken extends Command
 
         // Check expiration
         if (isset($payload['exp'])) {
-            $expiration = \DateTime::createFromFormat('U', $payload['exp']);
+            // Converter para inteiro para remover a parte fracionária
+            $expTimestamp = (int)$payload['exp'];
+            $expiration = new \DateTime("@$expTimestamp");
             $now = new \DateTime();
 
             $this->info("\nToken Status:");
             $this->info("Expires: " . $expiration->format('Y-m-d H:i:s'));
             $this->info("Now: " . $now->format('Y-m-d H:i:s'));
             $this->info("Valid: " . ($expiration > $now ? 'Yes' : 'No'));
+            
+            // Mostrar quanto tempo falta
+            $interval = $now->diff($expiration);
+            if ($expiration > $now) {
+                $this->info("Tempo restante: " . $interval->format('%a dias, %h horas, %i minutos'));
+            } else {
+                $this->error("Token expirado há: " . $interval->format('%a dias, %h horas, %i minutos'));
+            }
         }
 
         // Check scopes

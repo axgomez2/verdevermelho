@@ -1,5 +1,23 @@
 document.addEventListener('DOMContentLoaded', function() {
     const wishlistButtons = document.querySelectorAll('.wishlist-button');
+    
+    // Função para verificar se o usuário está logado
+    function isUserLoggedIn() {
+        // Na estrutura do site, há vários elementos que só aparecem para usuários logados
+        // Verificamos a presença de qualquer um desses elementos
+        return (
+            // Botão de perfil que mostra o nome do usuário
+            document.querySelector('a[href="/user/profile"]') !== null ||
+            // Link para edição de perfil
+            document.querySelector('a[href="/profile/edit"]') !== null ||
+            // Botão de logout
+            document.querySelector('form[action="/logout"]') !== null ||
+            // Meta tag que contém o ID do usuário
+            document.querySelector('meta[name="user-id"]') !== null ||
+            // Botão de favoritos autenticado
+            document.querySelector('a[href="/favoritos"]') !== null
+        );
+    }
 
     wishlistButtons.forEach(button => {
         button.addEventListener('click', function(e) {
@@ -10,13 +28,38 @@ document.addEventListener('DOMContentLoaded', function() {
             const isAvailable = this.dataset.isAvailable === 'true';
             const icon = this.querySelector('i');
 
+            // Verifica se o usuário está logado
+            if (!isUserLoggedIn()) {
+                // Exibe o toast com botão de login
+                window.showToast(
+                    `Você precisa estar logado para adicionar itens ${isAvailable ? 'aos favoritos' : 'à wantlist'}.`, 
+                    'error', 
+                    {
+                        actionButton: {
+                            text: 'Fazer Login',
+                            onClick: function() {
+                                window.dispatchEvent(new CustomEvent('open-login-modal'));
+                            }
+                        },
+                        duration: 8000 // Aumenta o tempo para o usuário ver o botão
+                    }
+                );
+                return;
+            }
+
             // Desabilita o botão temporariamente para evitar cliques duplos
             this.disabled = true;
 
             // Usa a URL base da aplicação
             const baseUrl = window.location.origin;
             
-            fetch(`${baseUrl}/wishlist/toggle-favorite`, {
+            // Determina qual endpoint usar baseado na disponibilidade do produto
+            const endpoint = isAvailable === true ? 'wishlist/toggle-favorite' : 'wantlist/toggle-favorite';
+            
+            // Log para debug
+            console.log('Toggling with endpoint:', endpoint, 'Product Available:', isAvailable);
+            
+            fetch(`${baseUrl}/${endpoint}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -30,21 +73,20 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(response => {
                 if (response.status === 401) {
-                    // Usuário não está logado
-                    Swal.fire({
-                        title: 'Atenção!',
-                        text: 'Você precisa estar logado para adicionar itens aos favoritos.',
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonText: 'Fazer Login',
-                        cancelButtonText: 'Cancelar',
-                        confirmButtonColor: '#3085d6',
-                        cancelButtonColor: '#d33'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            window.location.href = `${baseUrl}/login`;
+                    // Usuário não está logado - exibe toast com botão de login
+                    window.showToast(
+                        'Você precisa estar logado para adicionar itens aos favoritos.', 
+                        'error', 
+                        {
+                            actionButton: {
+                                text: 'Fazer Login',
+                                onClick: function() {
+                                    window.dispatchEvent(new CustomEvent('open-login-modal'));
+                                }
+                            },
+                            duration: 8000 // Aumenta o tempo para o usuário ver o botão
                         }
-                    });
+                    );
                     throw new Error('Unauthorized');
                 }
                 if (!response.ok) {
@@ -78,37 +120,15 @@ document.addEventListener('DOMContentLoaded', function() {
                         wishlistCounter.textContent = data.wishlistCount;
                     }
 
-                    // Mostra mensagem de sucesso usando SweetAlert2
-                    const Toast = Swal.mixin({
-                        toast: true,
-                        position: 'top-end',
-                        showConfirmButton: false,
-                        timer: 3000,
-                        timerProgressBar: true,
-                        didOpen: (toast) => {
-                            toast.addEventListener('mouseenter', Swal.stopTimer);
-                            toast.addEventListener('mouseleave', Swal.resumeTimer);
-                        }
-                    });
-
-                    Toast.fire({
-                        icon: 'success',
-                        title: data.message
-                    });
+                    // Mostra mensagem de sucesso usando o sistema de toast padronizado
+                    window.showToast(data.message, 'success');
                 } else {
                     throw new Error(data.message || 'Erro ao processar solicitação');
                 }
             })
             .catch(error => {
-                console.error('Erro:', error);
-                if (error.message !== 'Unauthorized') {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Ops!',
-                        text: 'Erro ao processar sua solicitação',
-                        confirmButtonText: 'OK'
-                    });
-                }
+                console.error('Erro ao processar wishlist:', error);
+                window.showToast('Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente mais tarde.', 'error');
             })
             .finally(() => {
                 // Reabilita o botão

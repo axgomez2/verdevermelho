@@ -140,4 +140,74 @@ class WishlistController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Toggle um item na wantlist (para itens indisponíveis)
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function toggleWantlist(Request $request)
+    {
+        if (!auth()->check()) {
+            return response()->json(['message' => 'Você precisa estar logado para adicionar itens à wantlist.'], 401);
+        }
+
+        $request->validate([
+            'product_id' => 'required|integer',
+            'product_type' => 'required|in:App\\Models\\VinylMaster,App\\Models\\Equipment',
+        ]);
+
+        try {
+            $user = auth()->user();
+            $productType = $request->product_type;
+            $productId = $request->product_id;
+
+            // Verifica se o produto existe e se está indisponível
+            $product = $productType::findOrFail($productId);
+            
+            // Verifica se o produto já está na wantlist
+            $inWantlist = $user->wantlist()
+                ->where('product_type', $productType)
+                ->where('product_id', $productId)
+                ->exists();
+
+            // Se já estiver na wantlist, remove
+            if ($inWantlist) {
+                $user->wantlist()
+                    ->where('product_type', $productType)
+                    ->where('product_id', $productId)
+                    ->delete();
+
+                $message = 'Item removido da sua wantlist com sucesso.';
+                $inWantlist = false;
+            } 
+            // Se não estiver na wantlist, adiciona
+            else {
+                $user->wantlist()->create([
+                    'product_type' => $productType,
+                    'product_id' => $productId,
+                ]);
+
+                $message = 'Item adicionado à sua wantlist com sucesso. Você será notificado quando estiver disponível.';
+                $inWantlist = true;
+            }
+
+            // Contagem total de itens na wantlist do usuário
+            $wantlistCount = $user->wantlist()->count();
+            
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'in_wantlist' => $inWantlist,
+                'wantlistCount' => $wantlistCount,
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao processar sua solicitação: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
 }

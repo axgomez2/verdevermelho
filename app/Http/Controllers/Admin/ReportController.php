@@ -18,8 +18,65 @@ class ReportController extends Controller
      */
     public function index()
     {
-        // Abordagem simplificada para testar se a view está funcionando
-        return view('admin.reports.teste');
+        // Total de visualizações
+        $totalViews = VinylView::count();
+        
+        // Total de discos únicos visualizados
+        $uniqueVinyls = VinylView::distinct('vinyl_master_id')->count('vinyl_master_id');
+        
+        // Total de usuários únicos que visualizaram discos
+        $uniqueUsers = VinylView::whereNotNull('user_id')->distinct('user_id')->count('user_id');
+        
+        // Visualizações nos últimos 30 dias (para o gráfico)
+        $dateRange = [];
+        $startDate = now()->subDays(30);
+        
+        // Inicializar array com zeros para cada dia
+        for ($i = 0; $i < 30; $i++) {
+            $date = $startDate->copy()->addDays($i)->format('Y-m-d');
+            $dateRange[$date] = 0;
+        }
+        
+        // Obter contagem real de visualizações por dia
+        $dailyViews = VinylView::select(
+                DB::raw('DATE(viewed_at) as date'),
+                DB::raw('COUNT(*) as count')
+            )
+            ->where('viewed_at', '>=', $startDate)
+            ->groupBy('date')
+            ->get()
+            ->pluck('count', 'date')
+            ->toArray();
+        
+        // Mesclar os dados reais com os zeros inicializados
+        foreach ($dailyViews as $date => $count) {
+            if (isset($dateRange[$date])) {
+                $dateRange[$date] = $count;
+            }
+        }
+        
+        // Top 10 discos mais vistos
+        $topVinyls = VinylMaster::select(
+                'vinyl_masters.id',
+                'vinyl_masters.title',
+                'vinyl_masters.slug',
+                'vinyl_masters.cover_image',
+                DB::raw('COUNT(vinyl_views.id) as view_count')
+            )
+            ->leftJoin('vinyl_views', 'vinyl_masters.id', '=', 'vinyl_views.vinyl_master_id')
+            ->with('artists')
+            ->groupBy('vinyl_masters.id', 'vinyl_masters.title', 'vinyl_masters.slug', 'vinyl_masters.cover_image')
+            ->orderByDesc('view_count')
+            ->limit(10)
+            ->get();
+        
+        return view('admin.reports.index', compact(
+            'totalViews', 
+            'uniqueVinyls', 
+            'uniqueUsers', 
+            'dateRange', 
+            'topVinyls'
+        ));
     }
     
     /**

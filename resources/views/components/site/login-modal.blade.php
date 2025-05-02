@@ -21,8 +21,9 @@
                         <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
                             <h3 class="text-base font-semibold leading-6 text-gray-900" id="modal-title">Login</h3>
                             <div class="mt-4">
-                                <form method="POST" action="{{ route('login') }}" class="space-y-6">
+                                <form method="POST" action="{{ route('login') }}" class="space-y-6" id="login-form">
                                     @csrf
+                                    <input type="hidden" name="cart_data" id="local-cart-data">
                                     <div>
                                         <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
                                         <div class="mt-1">

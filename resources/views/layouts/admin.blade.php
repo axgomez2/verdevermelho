@@ -133,6 +133,19 @@
                         <span class="ml-3">Equipamentos</span>
                     </a>
                 </li>
+                
+                <!-- Relatórios -->
+                <li>
+                    <a href="{{ route('admin.reports.index') }}"
+                       class="flex items-center p-2 text-gray-900 rounded-lg transition duration-75 group
+                              {{ request()->routeIs('admin.reports.*') ? 'bg-gray-100' : 'hover:bg-gray-100' }}">
+                        <svg class="w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900"
+                             aria-hidden="true" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M2 3a1 1 0 00-1 1v16a1 1 0 001 1h16a1 1 0 001-1V4a1 1 0 00-1-1H2zm4 12a1 1 0 01-1-1V9a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H6zm6 0a1 1 0 01-1-1V7a1 1 0 011-1h2a1 1 0 011 1v7a1 1 0 01-1 1h-2zm5-10v10"></path>
+                        </svg>
+                        <span class="ml-3">Relatórios</span>
+                    </a>
+                </li>
 
                 <!-- Settings -->
                 <li>
@@ -215,8 +228,7 @@
             @yield('content')
         </div>
     </div>
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <!-- Scripts carregados via arquivo toast.js para sistema de notificações -->
     @stack('scripts')
 </body>
 </html>

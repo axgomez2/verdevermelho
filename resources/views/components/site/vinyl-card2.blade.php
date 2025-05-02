@@ -37,13 +37,18 @@
             </div>
             <button
                 type="button"
-                title="{{ $vinyl->inWishlist() ? 'Remover dos favoritos' : 'Adicionar aos favoritos' }}"
+                title="{{ $vinyl->vinylSec->quantity > 0 ? ($vinyl->inWishlist() ? 'Remover dos favoritos' : 'Adicionar aos favoritos') : ($vinyl->inWantlist() ? 'Remover da wantlist' : 'Adicionar à wantlist') }}"
                 class="wishlist-button btn btn-circle btn-xs btn-outline"
                 data-product-id="{{ $vinyl->id }}"
                 data-product-type="{{ get_class($vinyl) }}"
-                data-in-wishlist="{{ $vinyl->inWishlist() ? 'true' : 'false' }}"
+                data-is-available="{{ json_encode($vinyl->vinylSec->quantity > 0) }}"
+                data-in-wishlist="{{ json_encode($vinyl->vinylSec->quantity > 0 ? $vinyl->inWishlist() : $vinyl->inWantlist()) }}"
             >
-                <i class="fas fa-heart {{ $vinyl->inWishlist() ? 'text-red-500' : 'text-gray-400' }}"></i>
+                @if($vinyl->vinylSec->quantity > 0)
+                    <i class="fas fa-heart {{ $vinyl->inWishlist() ? 'text-red-500' : 'text-gray-400' }}"></i>
+                @else
+                    <i class="fas fa-flag {{ $vinyl->inWantlist() ? 'text-red-500' : 'text-gray-400' }}"></i>
+                @endif
             </button>
         </div>
         <div class="card-actions justify-end mt-2">

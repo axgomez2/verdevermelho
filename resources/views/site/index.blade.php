@@ -255,18 +255,7 @@
                             cadastre-se
                         </button>
                     </form>
-                    <div id="newsletter-success" class="hidden absolute mt-2 left-0 right-0 py-1.5 px-3 bg-green-600/90 text-white text-sm font-medium rounded-md">
-                        <div class="flex items-center">
-                            <i class="fas fa-check-circle mr-2"></i>
-                            <span>Email cadastrado com sucesso!</span>
-                        </div>
-                    </div>
-                    <div id="newsletter-error" class="hidden absolute mt-2 left-0 right-0 py-1.5 px-3 bg-red-600/90 text-white text-sm font-medium rounded-md">
-                        <div class="flex items-center">
-                            <i class="fas fa-exclamation-circle mr-2"></i>
-                            <span id="newsletter-error-message">Ocorreu um erro ao processar sua solicitação.</span>
-                        </div>
-                    </div>
+                    <!-- Removidas as mensagens inline para usar apenas o sistema global de toast -->
                 </div>
             </div>
         </div>
@@ -275,9 +264,6 @@
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         const newsletterForm = document.getElementById('newsletter-form');
-        const successMessage = document.getElementById('newsletter-success');
-        const errorMessage = document.getElementById('newsletter-error');
-        const errorMessageText = document.getElementById('newsletter-error-message');
         
         if (newsletterForm) {
             newsletterForm.addEventListener('submit', function(e) {
@@ -286,10 +272,6 @@
                 const emailInput = document.getElementById('newsletter-email');
                 const submitButton = document.getElementById('newsletter-submit');
                 const formData = new FormData(newsletterForm);
-                
-                // Esconder mensagens de feedback antes de enviar
-                successMessage.classList.add('hidden');
-                errorMessage.classList.add('hidden');
                 
                 // Desativar o botão durante o envio
                 submitButton.disabled = true;
@@ -306,29 +288,17 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        // Mensagem de sucesso
-                        successMessage.classList.remove('hidden');
+                        // Usar o sistema global de toast para sucesso
+                        window.showToast("Email cadastrado com sucesso!", "success");
                         emailInput.value = ''; // Limpar o campo de email
-                        
-                        // Esconder a mensagem de sucesso após 5 segundos
-                        setTimeout(() => {
-                            successMessage.classList.add('hidden');
-                        }, 5000);
                     } else {
-                        // Mensagem de erro
-                        errorMessageText.textContent = data.message;
-                        errorMessage.classList.remove('hidden');
-                        
-                        // Esconder a mensagem de erro após 8 segundos
-                        setTimeout(() => {
-                            errorMessage.classList.add('hidden');
-                        }, 8000);
+                        // Usar o sistema global de toast para erro
+                        window.showToast(data.message || "Ocorreu um erro ao processar sua solicitação.", "error");
                     }
                 })
                 .catch(error => {
-                    // Erro no processamento
-                    errorMessageText.textContent = 'Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente.';
-                    errorMessage.classList.remove('hidden');
+                    // Erro no processamento - usar o sistema global de toast
+                    window.showToast("Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente.", "error");
                 })
                 .finally(() => {
                     // Reativar o botão

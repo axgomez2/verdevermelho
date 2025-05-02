@@ -64,7 +64,7 @@ class HomeController extends Controller
                     $query->where('cat_style_shop_id', $category->id);
                 })
                 ->inRandomOrder()
-                ->take(4)
+                ->take(5)
                 ->get();
                 
             if ($randomVinyls->count() > 0) {

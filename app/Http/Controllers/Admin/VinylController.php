@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\{VinylMaster, Artist, Genre, Style, Product, ProductType, RecordLabel, Track, Weight, Dimension, VinylSec, Media, CatStyleShop, Cart, Wantlist, Wishlist};
+use App\Services\{VinylService, DiscogsService, ImageService};
 use App\Traits\FlashMessages;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\{Http, DB, Storage, Log};
@@ -14,6 +15,33 @@ use Intervention\Image\Drivers\Gd\Driver;
 class VinylController extends Controller
 {
     use FlashMessages;
+    
+    /**
+     * @var VinylService
+     */
+    protected $vinylService;
+    
+    /**
+     * @var DiscogsService
+     */
+    protected $discogsService;
+    
+    /**
+     * @var ImageService
+     */
+    protected $imageService;
+    
+    /**
+     * @param VinylService $vinylService
+     * @param DiscogsService $discogsService
+     * @param ImageService $imageService
+     */
+    public function __construct(VinylService $vinylService, DiscogsService $discogsService, ImageService $imageService)
+    {
+        $this->vinylService = $vinylService;
+        $this->discogsService = $discogsService;
+        $this->imageService = $imageService;
+    }
 
     // Index and listing methods
     public function index(Request $request)
@@ -70,7 +98,7 @@ class VinylController extends Controller
 
             $releaseId = $request->input('release_id');
             if ($releaseId) {
-                $selectedRelease = $this->getDiscogsRelease($releaseId);
+                $selectedRelease = $this->discogsService->getRelease($releaseId);
             }
 
             return view('admin.vinyls.create', compact('searchResults', 'query', 'selectedRelease'));
@@ -82,32 +110,63 @@ class VinylController extends Controller
 
     public function store(Request $request)
     {
-        $releaseId = $request->input('release_id');
-        $releaseData = $this->getDiscogsRelease($releaseId);
-
-        if (!$releaseData) {
-            return response()->json(['status' => 'error', 'message' => 'Failed to fetch release data from Discogs.'], 400);
-        }
-
-        $existingVinyl = VinylMaster::where('discogs_id', $releaseId)->first();
-        if ($existingVinyl) {
-            return response()->json([
-                'status' => 'exists',
-                'message' => 'Este disco já está cadastrado no sistema.',
-                'vinyl_id' => $existingVinyl->id
-            ]);
-        }
-
-        DB::beginTransaction();
-
         try {
-            $vinylMaster = $this->createOrUpdateVinylMaster($releaseData);
-            $this->syncArtists($vinylMaster, $releaseData['artists']);
-            $this->syncGenres($vinylMaster, $releaseData['genres']);
-            $this->syncStyles($vinylMaster, $releaseData['styles'] ?? []);
-            $this->associateRecordLabel($vinylMaster, $releaseData['labels'][0] ?? null);
-            $this->createOrUpdateTracks($vinylMaster, $releaseData['tracklist']);
-            $this->createOrUpdateProduct($vinylMaster, $releaseData);
+            // Garantir que o release_id é uma string
+            $releaseId = (string) $request->input('release_id');
+            
+            // Verificar se temos um ID válido
+            if (empty($releaseId)) {
+                return response()->json(['status' => 'error', 'message' => 'ID do lançamento não fornecido.'], 400);
+            }
+            
+            // Obter dados do Discogs
+            $releaseData = $this->discogsService->getRelease($releaseId);
+
+            if (!$releaseData) {
+                return response()->json(['status' => 'error', 'message' => 'Falha ao buscar dados da API do Discogs.'], 400);
+            }
+
+            // Verificar se o disco já existe
+            $existingVinyl = VinylMaster::where('discogs_id', $releaseId)->first();
+            if ($existingVinyl) {
+                return response()->json([
+                    'status' => 'exists',
+                    'message' => 'Este disco já está cadastrado no sistema.',
+                    'vinyl_id' => $existingVinyl->id
+                ]);
+            }
+            
+            // Verificar se já existe algum disco com o mesmo título
+            $title = $releaseData['title'] ?? '';
+            $baseSlug = Str::slug($title);
+            
+            // Cria um slug totalmente único e garantido usando timestamp
+            // Isso evita QUALQUER possibilidade de duplicação  
+            $uniqueSlug = $baseSlug . '-' . time() . '-' . substr($releaseId, -4);
+            
+            // Injetamos o slug diretamente nos dados
+            $releaseData['_unique_slug'] = $uniqueSlug;
+
+            DB::beginTransaction();
+
+            // Criar o registro principal do vinyl - agora com o slug único
+            $vinylMaster = $this->vinylService->createOrUpdateVinylMaster($releaseData);
+            
+            // Sincronizar relacionamentos
+            $this->vinylService->syncArtists($vinylMaster, $releaseData['artists'] ?? []);
+            $this->vinylService->syncGenres($vinylMaster, $releaseData['genres'] ?? []);
+            $this->vinylService->syncStyles($vinylMaster, $releaseData['styles'] ?? []);
+            
+            // Verificar se há dados de gravadora antes de sincronizar
+            if (!empty($releaseData['labels']) && !empty($releaseData['labels'][0])) {
+                $this->vinylService->associateRecordLabel($vinylMaster, $releaseData['labels'][0]);
+            }
+            
+            // Criar faixas e produto
+            if (!empty($releaseData['tracklist'])) {
+                $this->vinylService->createOrUpdateTracks($vinylMaster, $releaseData['tracklist']);
+            }
+            $this->vinylService->createOrUpdateProduct($vinylMaster, $releaseData);
 
             DB::commit();
             return response()->json([
@@ -119,9 +178,16 @@ class VinylController extends Controller
             DB::rollBack();
             Log::error('Error saving vinyl data: ' . $e->getMessage());
             Log::error($e->getTraceAsString());
+            
+            // Obter a mensagem de erro original para exibir no modal
+            $errorMessage = 'Erro: ' . $e->getMessage();
+            
+            // Adicionar linha e arquivo para melhor diagnóstico
+            $errorLocation = ' [Arquivo: ' . basename($e->getFile()) . ', Linha: ' . $e->getLine() . ']';
+            
             return response()->json([
                 'status' => 'error',
-                'message' => 'Ocorreu um erro ao salvar o disco. Por favor, tente novamente.',
+                'message' => $errorMessage . $errorLocation,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ], 500);
@@ -278,7 +344,7 @@ class VinylController extends Controller
         DB::beginTransaction();
 
         try {
-            $release = $this->getDiscogsRelease($vinyl->discogs_id);
+            $release = $this->discogsService->getRelease($vinyl->discogs_id);
 
             if ($release && isset($release['images'][0]['uri'])) {
                 $coverImageUrl = $release['images'][0]['uri'];
@@ -339,57 +405,11 @@ class VinylController extends Controller
     // Helper methods
     private function searchDiscogs($query)
     {
-        $response = Http::get('https://api.discogs.com/database/search', [
-            'q' => $query,
-            'type' => 'release',
-            'token' => config('services.discogs.token'),
-        ]);
-
-        if (!$response->successful()) {
-            throw new \Exception('Failed to fetch data from Discogs API: ' . $response->body());
-        }
-
-        return $response->json()['results'] ?? [];
-    }
-
-    private function getDiscogsRelease($releaseId)
-    {
         try {
-            $response = Http::get("https://api.discogs.com/releases/{$releaseId}", [
-                'token' => config('services.discogs.token'),
-            ]);
-
-            if (!$response->successful()) {
-                return null;
-            }
-
-            $releaseData = $response->json();
-
-            $marketResponse = Http::get("https://api.discogs.com/releases/{$releaseId}", [
-                'token' => config('services.discogs.token'),
-            ]);
-
-            if ($marketResponse->successful()) {
-                $marketData = $marketResponse->json();
-                $lowestPrice = $marketData['lowest_price'] ?? 0;
-
-                if ($lowestPrice > 0) {
-                    $releaseData['lowest_price'] = $lowestPrice;
-                    $releaseData['median_price'] = $lowestPrice * 1.5;
-                    $releaseData['highest_price'] = $lowestPrice * 2;
-
-                    Log::info('Calculated Prices:', [
-                        'lowest' => $releaseData['lowest_price'],
-                        'median' => $releaseData['median_price'],
-                        'highest' => $releaseData['highest_price']
-                    ]);
-                }
-            }
-
-            return $releaseData;
+            return $this->discogsService->search($query);
         } catch (\Exception $e) {
-            Log::error('Error fetching Discogs data: ' . $e->getMessage());
-            return null;
+            Log::error('Error searching Discogs: ' . $e->getMessage());
+            throw $e;
         }
     }
 
@@ -514,7 +534,8 @@ class VinylController extends Controller
 
     private function getWantListCount($vinyl)
     {
-        if (!$vinyl->vinylSec->in_stock) {
+        // Verificar se vinylSec existe antes de acessar suas propriedades
+        if ($vinyl->vinylSec && !$vinyl->vinylSec->in_stock) {
             return Wantlist::where('product_id', $vinyl->id)
                 ->where('product_type', 'VinylMaster')
                 ->count();

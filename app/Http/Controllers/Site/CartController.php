@@ -32,6 +32,7 @@ class CartController extends Controller
 
         $user = Auth::user();
         $address = $user ? $user->addresses()->where('is_default', 1)->first() : null;
+        $isLoggedIn = Auth::check();
 
         $postalCode = null;
         $shippingOptions = [];
@@ -62,10 +63,15 @@ class CartController extends Controller
             }
         }
 
-        $tax = $subtotal * 0.1; // 10% de imposto
-        $total = $subtotal + $shipping + $tax;
+        // Removido cálculo de imposto conforme solicitado
+        $total = $subtotal + $shipping;
 
-        return view('site.cart.index', compact('cart', 'subtotal', 'shipping', 'tax', 'total', 'shippingOptions', 'address'));
+        // Armazenar o CEP do usuário na sessão se ele estiver logado e tiver um endereço
+        if ($address && $address->zip_code && Auth::check()) {
+            session(['shipping_postal_code' => preg_replace('/[^0-9]/', '', $address->zip_code)]);
+        }
+
+        return view('site.cart.index', compact('cart', 'subtotal', 'shipping', 'total', 'shippingOptions', 'address', 'isLoggedIn', 'postalCode'));
     }
 
     public function addToCart(Request $request)
@@ -124,6 +130,49 @@ class CartController extends Controller
         return redirect()->route('site.cart.index')->with('success', 'Item removido do carrinho.');
     }
 
+    /**
+     * Calcula opções de frete para um determinado CEP
+     * 
+     * @param string $postalCode CEP de destino
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getShippingOptions($postalCode)
+    {
+        // Limpar o CEP para garantir que tenha apenas números
+        $postalCode = preg_replace('/[^0-9]/', '', $postalCode);
+        
+        if (strlen($postalCode) !== 8) {
+            return response()->json(['error' => 'CEP inválido. O CEP deve ter 8 dígitos.', 'success' => false], 400);
+        }
+        
+        // Salvar o CEP na sessão
+        session(['shipping_postal_code' => $postalCode]);
+        
+        $cart = $this->getOrCreateCart();
+        if ($cart->items->isEmpty()) {
+            return response()->json(['error' => 'Carrinho vazio', 'success' => false], 400);
+        }
+        
+        try {
+            // Calcular opções de frete
+            $options = $this->shippingService->calculateShipping($cart->items, $postalCode);
+            
+            if (empty($options)) {
+                return response()->json(['error' => 'Nenhuma opção de frete disponível para este CEP.', 'success' => false], 404);
+            }
+            
+            // Retornar opções de frete
+            return response()->json(['success' => true, 'options' => $options]);
+        } catch (\Exception $e) {
+            Log::error('Erro ao calcular opções de frete', [
+                'message' => $e->getMessage(),
+                'postal_code' => $postalCode
+            ]);
+            
+            return response()->json(['error' => 'Erro ao calcular opções de frete. Tente novamente.', 'success' => false], 500);
+        }
+    }
+
     public function updateShipping(Request $request)
     {
         $request->validate([
@@ -175,6 +224,77 @@ class CartController extends Controller
             
             return response()->json(['error' => 'Erro ao calcular o frete'], 500);
         }
+    }
+
+    /**
+     * Importa itens do carrinho local (localStorage) para o carrinho do usuário
+     *
+     * @param array $cartData Dados do carrinho local
+     * @return Cart O carrinho do usuário
+     */
+    public function importLocalCart(array $cartData)
+    {
+        if (!Auth::check()) {
+            return false;
+        }
+        
+        $cart = $this->getOrCreateCart();
+        
+        // Importar itens do localStorage
+        foreach ($cartData as $item) {
+            if (!isset($item['product_id']) || !isset($item['quantity'])) {
+                continue;
+            }
+            
+            try {
+                $productId = $item['product_id'];
+                $quantity = $item['quantity'];
+                
+                // Validar se o produto existe
+                $product = Product::find($productId);
+                if (!$product) {
+                    continue;
+                }
+                
+                // Verificar estoque
+                $availableQuantity = 0;
+                if ($product->productable_type === 'App\\Models\\Vinyl' && $product->productable && $product->productable->vinylSec) {
+                    $availableQuantity = $product->productable->vinylSec->quantity;
+                }
+                
+                // Continuar mesmo se availableQuantity for 0, apenas limitando a quantidade
+                // Isso permite que o usuário adicione produtos sem estoque ao carrinho
+                // para visualização, mas a quantidade será limitada quando o produto estiver em estoque
+                    // Verificar se já existe no carrinho do usuário
+                    $existingItem = $cart->items()->where('product_id', $productId)->first();
+                    if ($existingItem) {
+                        // Atualizar quantidade respeitando o estoque disponível
+                        $newQuantity = $existingItem->quantity + $quantity;
+                        if ($availableQuantity > 0 && $newQuantity > $availableQuantity) {
+                            $newQuantity = $availableQuantity;
+                        }
+                        $existingItem->quantity = $newQuantity;
+                        $existingItem->save();
+                    } else {
+                        // Adicionar novo item respeitando o estoque disponível
+                        $newQuantity = $quantity;
+                        if ($availableQuantity > 0 && $newQuantity > $availableQuantity) {
+                            $newQuantity = $availableQuantity;
+                        }
+                        $cart->items()->create([
+                            'product_id' => $productId,
+                            'quantity' => $newQuantity
+                        ]);
+                    }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Erro ao importar item: ' . $e->getMessage(), [
+                    'item' => $item,
+                    'user_id' => Auth::id()
+                ]);
+            }
+        }
+        
+        return $cart;
     }
 
     public function getOrCreateCart()

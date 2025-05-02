@@ -22,9 +22,10 @@ use Laravel\Socialite\Facades\Socialite;
 // Rotas para o Navbar
 
 
-// Rotas para Wishlist
+// Rotas para Wishlist e Wantlist
 Route::middleware('auth')->group(function () {
     Route::post('/wishlist/toggle-favorite', [WishlistController::class, 'toggleFavorite'])->name('wishlist.toggle-favorite');
+    Route::post('/wantlist/toggle-favorite', [WishlistController::class, 'toggleWantlist'])->name('wantlist.toggle-favorite');
     Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.index');
 });
 

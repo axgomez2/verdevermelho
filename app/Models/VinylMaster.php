@@ -42,7 +42,15 @@ class VinylMaster extends Model
         parent::boot();
 
         static::creating(function ($vinylMaster) {
-            $vinylMaster->slug = Str::slug($vinylMaster->title);
+            // Só gera o slug se não estiver definido ou for vazio
+            if (empty($vinylMaster->slug)) {
+                $baseSlug = Str::slug($vinylMaster->title);
+                
+                // Adicionar timestamp para garantir unicidade
+                $uniqueSlug = $baseSlug . '-' . time() . '-' . substr($vinylMaster->discogs_id, -4);
+                
+                $vinylMaster->slug = $uniqueSlug;
+            }
         });
     }
 
