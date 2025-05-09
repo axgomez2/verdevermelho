@@ -8,7 +8,7 @@
                     <div class="relative">
                         <img
                             id="album-cover"
-                            src="/path/to/default/cover.jpg"
+                            src="{{ asset('assets/images/logo2.png') }}"
                             alt="Album cover"
                             class="w-16 h-16 object-cover rounded-full shadow-lg transition-transform duration-500"
                             data-playing="false"
@@ -97,7 +97,7 @@
                         <div class="relative w-12 h-12">
                             <img
                                 id="album-cover-mobile"
-                                src="/path/to/default/cover.jpg"
+                                src="{{ asset('assets/images/logo2.png') }}"
                                 alt="Album cover"
                                 class="w-12 h-12 object-cover rounded-full shadow"
                                 data-playing="false"

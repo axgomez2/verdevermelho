@@ -10,8 +10,19 @@
     <!-- Um refresh automático após o tempo de vida da sessão para garantir tokens CSRF válidos -->
     <meta name="description" content="@yield('meta_description', 'A LOJA REFERENCIA EM DISCOS DE DANCE MUSIC.')">
     <meta name="keywords" content="@yield('meta_keywords', 'vinyl, records, music, albums, turntable, audiophile')">
-    <meta name="author" content="Your Company Name">
+    <meta name="author" content="Embaixada Dance Music">
     <meta name="robots" content="index, follow">
+
+    <!-- Meta tags de segurança -->
+    <meta name="norton-safeweb-site-verification" content="embaixadadancemusic-verified-site">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="google-site-verification" content="verificado-pela-embaixada-dance-music">
+    <meta name="msvalidate.01" content="verificado-pela-embaixada-dance-music">
+    <meta name="apple-itunes-app" content="app-id=myAppStoreID">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
 
     <title>@yield('title', 'EMBAIXADA DANCE MUSIC - 30 ANOS DE MERCADO')</title>
 
@@ -32,8 +43,29 @@
     <!-- Stylesheets -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
-    <!-- Vite -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <!-- Assets carregados de forma segura -->
+    @php
+        $useBuildAssets = file_exists(public_path('build/manifest.json'));
+    @endphp
+    
+    @if($useBuildAssets)
+        @php
+            $manifest = json_decode(file_get_contents(public_path('build/manifest.json')), true);
+            $cssFile = $manifest['resources/css/app.css']['file'] ?? null;
+            $jsFile = $manifest['resources/js/app.js']['file'] ?? null;
+        @endphp
+        
+        @if($cssFile)
+            <link rel="stylesheet" href="{{ asset('build/' . $cssFile) }}">
+        @endif
+        
+        @if($jsFile)
+            <script type="module" src="{{ asset('build/' . $jsFile) }}"></script>
+        @endif
+    @else
+        <!-- Fallback para Vite -->
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @endif
 
     <!-- Custom CSS -->
     @stack('styles')
@@ -46,7 +78,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: black;
+            background-color: white;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -76,7 +108,7 @@
     <!-- Loading Screen -->
     <div id="loading-screen">
         <div role="status" class="flex flex-col items-center">
-            <img src="{{ asset('assets/images/logo_embaixada.png') }}" alt="Embaixada Dance Music" class="h-20 mb-4">
+            <img src="{{ asset('assets/images/logo2.png') }}" alt="Embaixada Dance Music" class="h-20 mb-4">
             <div class="flex items-center justify-center">
                 <svg aria-hidden="true" class="w-12 h-12 text-gray-300 animate-spin fill-blue-600" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/>

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Site\AddressController;
 use App\Http\Controllers\Site\OrderController;
 use App\Http\Controllers\Site\WantlistController;
 use App\Http\Controllers\Site\WishlistController;
@@ -26,6 +27,16 @@ Route::middleware(['auth', 'verified', 'rolemanager:user'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    
+    // Rotas de endereços
+    Route::prefix('profile/addresses')->name('site.profile.addresses.')->group(function () {
+        Route::get('/', [AddressController::class, 'index'])->name('index');
+        Route::get('/create', [AddressController::class, 'create'])->name('create');
+        Route::post('/', [AddressController::class, 'createAddress'])->name('store');
+        Route::get('/{address}/edit', [AddressController::class, 'edit'])->name('edit');
+        Route::put('/{address}', [AddressController::class, 'update'])->name('update');
+        Route::delete('/{address}', [AddressController::class, 'destroy'])->name('destroy');
+    });
 
     // Rotas de pedidos
     Route::get('/pedidos', [OrderController::class, 'index'])->name('site.orders.index');

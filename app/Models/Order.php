@@ -48,6 +48,47 @@ class Order extends Model
     {
         return $this->hasMany(OrderItem::class);
     }
+    
+    /**
+     * Get the status history for the order.
+     */
+    public function statusHistory(): HasMany
+    {
+        return $this->hasMany(OrderStatusHistory::class)->orderBy('created_at', 'desc');
+    }
+    
+    /**
+     * Update the order status and record in history
+     *
+     * @param string $status New status
+     * @param string|null $comment Optional comment about the status change
+     * @param int|null $createdBy User ID who created this update (null = system)
+     * @return bool
+     */
+    public function updateStatus(string $status, ?string $comment = null, ?int $createdBy = null): bool
+    {
+        $oldStatus = $this->status;
+        
+        // Only record if status is actually changing
+        if ($status !== $oldStatus) {
+            $this->status = $status;
+            
+            if ($this->save()) {
+                // Record in history
+                $this->statusHistory()->create([
+                    'status' => $status,
+                    'comment' => $comment ?? 'Status atualizado de ' . $oldStatus . ' para ' . $status,
+                    'created_by' => $createdBy
+                ]);
+                
+                return true;
+            }
+            
+            return false;
+        }
+        
+        return true; // No change needed
+    }
 
     /**
      * Get the shipping address for the order.

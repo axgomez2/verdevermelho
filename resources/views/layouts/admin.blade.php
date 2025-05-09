@@ -163,7 +163,7 @@
 
                 <!-- Orders -->
                 <li>
-                    <a href="#"
+                    <a href="{{ route('admin.orders.index') }}"
                        class="flex items-center p-2 text-gray-900 rounded-lg transition duration-75 group
                               {{ request()->routeIs('admin.orders.*') ? 'bg-gray-100' : 'hover:bg-gray-100' }}">
                         <svg class="w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900"
@@ -172,6 +172,11 @@
                             <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12zM6 10h2v2H6v-2zm0 4h8v2h-8v-2zm10 0h2v2h-2v-2zm-6-4h8v2h-8v-2z"/>
                         </svg>
                         <span class="ml-3">Pedidos</span>
+                        <span class="inline-flex items-center justify-center w-3 h-3 p-3 ml-3 text-sm font-medium text-blue-800 bg-blue-100 rounded-full">
+                            <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m8.742 11.725 1.485 1.571 5.606-5.858m-10.827.45 3.939 4.019 1.578-1.665" />
+                            </svg>
+                        </span>
                     </a>
                 </li>
 

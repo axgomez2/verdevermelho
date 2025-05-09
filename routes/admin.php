@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\CatStyleShopController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\NewsletterController;
+use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\PlaylistController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\TrackController;
@@ -140,5 +141,12 @@ Route::middleware(['auth', 'rolemanager:admin'])->group(function () {
         Route::post('/envios/{order}/generate-label', [ShippingController::class, 'generateLabel'])->name('admin.shipping.generate-label');
         Route::get('/envios/{order}/print-label', [ShippingController::class, 'printLabel'])->name('admin.shipping.print-label');
         Route::get('/envios/{order}/track', [ShippingController::class, 'trackShipment'])->name('admin.shipping.track');
+        
+        // Order Management
+        Route::get('/pedidos', [OrderController::class, 'index'])->name('admin.orders.index');
+        Route::get('/pedidos/{id}', [OrderController::class, 'show'])->name('admin.orders.show');
+        Route::post('/pedidos/{id}/status', [OrderController::class, 'updateStatus'])->name('admin.orders.update-status');
+        Route::post('/pedidos/{id}/rastreio', [OrderController::class, 'updateTracking'])->name('admin.orders.update-tracking');
+        Route::get('/pedidos/{id}/etiqueta', [OrderController::class, 'generateShippingLabel'])->name('admin.orders.shipping-label');
     });
 });

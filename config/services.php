@@ -49,6 +49,18 @@ return [
         'client_id' => env('MELHORENVIO_CLIENT_ID'),
         'client_secret' => env('MELHORENVIO_CLIENT_SECRET'),
         'token' => env('MELHORENVIO_API_TOKEN'),
+    ],
+
+    'rede_itau' => [
+        'merchant_id' => env('REDE_ITAU_MERCHANT_ID'),
+        'merchant_key' => env('REDE_ITAU_MERCHANT_KEY'),
+        'sandbox' => env('REDE_ITAU_SANDBOX', true),
+    ],
+    
+    'melhorenvio' => [
+        'client_id' => env('MELHORENVIO_CLIENT_ID'),
+        'client_secret' => env('MELHORENVIO_CLIENT_SECRET'),
+        'token' => env('MELHORENVIO_API_TOKEN'),
         'sandbox' => env('MELHORENVIO_SANDBOX', true),
         'from_postal_code' => env('MELHORENVIO_FROM_POSTAL_CODE'),
         'from_address' => env('MELHORENVIO_FROM_ADDRESS'),

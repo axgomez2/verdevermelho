@@ -72,58 +72,124 @@ window.AudioPlayer = class AudioPlayer {
 
     // Carrega a API do YouTube
     loadYouTubeAPI() {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
+            // Se a API já estiver carregada, retorna imediatamente
             if (window.YT && window.YT.Player) {
+                console.log('API do YouTube já carregada');
                 resolve();
                 return;
             }
 
-            // Callback global para quando a API carregar
+            // Define o callback global
             window.onYouTubeIframeAPIReady = () => {
-                console.log('API do YouTube carregada');
+                console.log('API do YouTube carregada com sucesso');
+                this.state.youtubeAvailable = true;
                 resolve();
             };
 
-            // Carrega o script da API
-            const tag = document.createElement('script');
-            tag.src = 'https://www.youtube.com/iframe_api';
-            tag.onerror = () => reject(new Error('Falha ao carregar API do YouTube'));
-            document.head.appendChild(tag);
+            try {
+                // Carrega o script da API
+                const tag = document.createElement('script');
+                tag.src = 'https://www.youtube.com/iframe_api';
+                
+                // Em caso de erro, continua mesmo sem YouTube
+                tag.onerror = () => {
+                    console.warn('Não foi possível carregar a API do YouTube. Alguns recursos podem estar indisponíveis.');
+                    this.state.youtubeAvailable = false;
+                    resolve(); // Resolve mesmo com erro para não interromper o fluxo
+                };
+                
+                document.head.appendChild(tag);
 
-            // Timeout de 10 segundos
-            setTimeout(() => reject(new Error('Timeout ao carregar API do YouTube')), 10000);
+                // Timeout mais curto (5 segundos) para não travar a interface
+                setTimeout(() => {
+                    if (!window.YT || !window.YT.Player) {
+                        console.warn('Timeout ao carregar a API do YouTube. Continuando sem este recurso.');
+                        this.state.youtubeAvailable = false;
+                        resolve(); // Resolve mesmo após timeout
+                    }
+                }, 5000);
+            } catch (e) {
+                console.warn('Erro ao tentar carregar a API do YouTube:', e);
+                this.state.youtubeAvailable = false;
+                resolve(); // Resolve mesmo com exceção
+            }
         });
     }
 
     // Cria o player do YouTube
     createPlayer() {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             try {
+                // Verifica se a API do YouTube está disponível
+                if (!window.YT || !window.YT.Player || this.state.youtubeAvailable === false) {
+                    console.warn('API do YouTube não disponível. Usando modo alternativo.');
+                    this.state.youtubeAvailable = false;
+                    this.setupAlternativePlayer();
+                    resolve(); // Continua mesmo sem o YouTube
+                    return;
+                }
+                
                 if (!this.elements.youtubePlayer) {
-                    console.error('Elemento do player não encontrado');
-                    reject(new Error('Elemento do player não encontrado'));
+                    console.warn('Elemento do player não encontrado. Usando modo alternativo.');
+                    this.setupAlternativePlayer();
+                    resolve(); // Continua mesmo sem o elemento
                     return;
                 }
 
-                this.player = new YT.Player('youtube-player', {
-                    ...this.playerConfig,
-                    events: {
-                        ...this.playerConfig.events,
-                        onReady: () => {
-                            console.log('Player do YouTube pronto');
-                            resolve();
-                        },
-                        onError: (error) => {
-                            console.error('Erro no player do YouTube:', error);
-                            reject(error);
+                // Cria o player do YouTube se tudo estiver disponível
+                try {
+                    this.player = new YT.Player('youtube-player', {
+                        ...this.playerConfig,
+                        events: {
+                            ...this.playerConfig.events,
+                            onReady: () => {
+                                console.log('Player do YouTube pronto');
+                                this.state.youtubeAvailable = true;
+                                resolve();
+                            },
+                            onError: (error) => {
+                                console.warn('Erro no player do YouTube:', error);
+                                this.state.youtubeAvailable = false;
+                                this.setupAlternativePlayer();
+                                resolve(); // Continua mesmo com erro
+                            }
                         }
-                    }
-                });
+                    });
+                } catch (ytError) {
+                    console.warn('Erro ao criar player do YouTube:', ytError);
+                    this.state.youtubeAvailable = false;
+                    this.setupAlternativePlayer();
+                    resolve(); // Continua mesmo com erro
+                }
             } catch (error) {
-                console.error('Erro ao criar player:', error);
-                reject(error);
+                console.warn('Erro geral ao configurar player:', error);
+                this.state.youtubeAvailable = false;
+                this.setupAlternativePlayer();
+                resolve(); // Continua mesmo com erro
             }
         });
+    }
+    
+    // Configura uma alternativa quando o YouTube não está disponível
+    setupAlternativePlayer() {
+        console.log('Configurando modo alternativo de player');
+        
+        // Oculta o container do YouTube e mostra uma mensagem alternativa
+        if (this.elements.youtubePlayer) {
+            this.elements.youtubePlayer.innerHTML = '<div class="p-4 bg-gray-100 rounded text-center">YouTube não disponível no momento</div>';
+        }
+        
+        // Define métodos de fallback para as funções do player
+        this.player = {
+            playVideo: () => console.log('Play não disponível'),
+            pauseVideo: () => console.log('Pause não disponível'),
+            stopVideo: () => console.log('Stop não disponível'),
+            getPlayerState: () => -1, // Estado indefinido
+            getDuration: () => 0,
+            getCurrentTime: () => 0,
+            seekTo: () => console.log('Seek não disponível')
+        };
     }
 
     // Configura os event listeners

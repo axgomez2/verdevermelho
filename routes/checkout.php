@@ -14,6 +14,7 @@ Route::middleware(['auth'])->prefix('checkout')->group(function () {
 Route::middleware(['auth'])->prefix('pagamentos')->group(function () {
     Route::get('/boleto/{order}', [PaymentController::class, 'showBoletoPage'])->name('site.payments.boleto');
     Route::get('/pix/{order}', [PaymentController::class, 'showPixPage'])->name('site.payments.pix');
+    Route::get('/check-pix-status/{order}/{pixId}', [PaymentController::class, 'checkPixStatus'])->name('site.payments.check-pix-status');
 });
 
 // Rota de notificação do PagSeguro (não requer autenticação)

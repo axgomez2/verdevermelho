@@ -1,0 +1,10 @@
+/* Estilos adicionais para garantir que o Vite está processando CSS */
+.vite-loaded {
+    display: inline-block;
+    background-color: green;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-top: 8px;
+    font-size: 12px;
+}

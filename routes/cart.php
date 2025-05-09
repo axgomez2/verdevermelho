@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Site\CartController;
 use App\Http\Controllers\Site\CartItemController;
 use App\Http\Controllers\Site\ShippingController;
+use App\Http\Controllers\Site\WhatsAppCheckoutController;
 
 Route::prefix('carrinho')->group(function () {
     // Cart routes
@@ -14,7 +15,10 @@ Route::prefix('carrinho')->group(function () {
     Route::post('/check-stock', [CartItemController::class, 'checkStock'])->name('site.cart.checkStock');
 
     // Shipping routes
-    Route::post('/postal-code', [CartController::class, 'updatePostalCode'])->name('site.cart.updatePostalCode');
-    Route::post('/shipping/update', [CartController::class, 'updateShipping'])->name('site.cart.updateShipping');
-    Route::get('/shipping/options/{postalCode}', [CartController::class, 'getShippingOptions'])->name('site.cart.getShippingOptions');
+    Route::post('/postal-code', [ShippingController::class, 'updatePostalCode'])->name('site.cart.updatePostalCode');
+    Route::post('/shipping/update', [ShippingController::class, 'updateShipping'])->name('site.cart.updateShipping');
+    Route::get('/shipping/options/{postalCode}', [ShippingController::class, 'getShippingOptions'])->name('site.cart.getShippingOptions');
+    
+    // WhatsApp checkout route
+    Route::post('/checkout/whatsapp/register', [WhatsAppCheckoutController::class, 'registerOrder'])->name('site.checkout.whatsapp.register');
 });

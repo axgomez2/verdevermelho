@@ -24,10 +24,19 @@
 
                     <div class="text-center mb-4">
                         <div class="qrcode-container p-3 d-inline-block border rounded mx-auto">
-                            <img src="{{ $qrCodeUrl }}" alt="QR Code PIX" class="img-fluid" style="max-width: 250px;">
+                            <img src="{{ $pixQrCode }}" alt="QR Code PIX" class="img-fluid" style="max-width: 250px;">
                         </div>
 
                         <p class="mt-3 text-muted">Escaneie este QR Code para pagar</p>
+                        
+                        <div class="mt-4">
+                            <h5>Código PIX para copiar e colar</h5>
+                            <div class="input-group mb-3">
+                                <input type="text" class="form-control" id="pixCode" value="{{ $pixCode }}" readonly>
+                                <button class="btn btn-outline-success" type="button" onclick="copyPixCode()">Copiar</button>
+                            </div>
+                            <small class="text-muted">Cole este código no aplicativo do seu banco</small>
+                        </div>
                     </div>
 
                     <hr>
@@ -50,4 +59,52 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+    function copyPixCode() {
+        const pixCodeInput = document.getElementById('pixCode');
+        pixCodeInput.select();
+        document.execCommand('copy');
+        
+        // Mostrar feedback ao usuário
+        const copyButton = pixCodeInput.nextElementSibling;
+        const originalText = copyButton.textContent;
+        copyButton.textContent = 'Copiado!';
+        copyButton.classList.remove('btn-outline-success');
+        copyButton.classList.add('btn-success');
+        
+        setTimeout(() => {
+            copyButton.textContent = originalText;
+            copyButton.classList.remove('btn-success');
+            copyButton.classList.add('btn-outline-success');
+        }, 2000);
+    }
+    
+    // Verificar status do pagamento periodicamente
+    function checkPaymentStatus() {
+        const orderId = {{ $order->id }};
+        const pixId = '{{ $pixId }}';
+        
+        if (!pixId) return;
+        
+        fetch(`/pagamentos/check-pix-status/${orderId}/${pixId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'paid') {
+                    // Redirecionar para a página do pedido
+                    window.location.href = `/minha-conta/pedidos/${orderId}?payment_success=true`;
+                }
+            })
+            .catch(error => console.error('Erro ao verificar status:', error));
+    }
+    
+    // Verificar a cada 30 segundos
+    setInterval(checkPaymentStatus, 30000);
+    
+    // Verificar na carga da página
+    document.addEventListener('DOMContentLoaded', checkPaymentStatus);
+</script>
+@endpush
+
 @endsection

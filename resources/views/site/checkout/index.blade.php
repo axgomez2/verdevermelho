@@ -1,385 +1,270 @@
-@extends('layouts.site')
+<x-app-layout>
+    <div class="bg-white py-8 antialiased md:py-10">
+        <div class="mx-auto max-w-screen-xl px-4 2xl:px-0">
+            <h1 class="text-2xl font-semibold text-gray-900 sm:text-3xl mb-6">Finalizar Compra</h1>
 
-@section('title', 'Checkout')
+            @if(session('error'))
+                <div class="p-4 mb-6 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400" role="alert">
+                    <span class="font-medium">Erro!</span> {{ session('error') }}
+                </div>
+            @endif
 
-@section('content')
-<div class="container py-5">
-    <h1 class="mb-4">Finalizar Compra</h1>
-
-    @if(session('error'))
-        <div class="alert alert-danger">
-            {{ session('error') }}
-        </div>
-    @endif
-
-    <div class="row">
+    <div class="md:gap-6 lg:flex lg:items-start">
         <!-- Resumo do Carrinho -->
-        <div class="col-md-5 order-md-2 mb-4">
-            <h4 class="d-flex justify-content-between align-items-center mb-3">
-                <span>Seu Carrinho</span>
-                <span class="badge badge-secondary badge-pill">{{ $cart->items->count() }}</span>
-            </h4>
-            <ul class="list-group mb-3">
-                @foreach($cart->items as $item)
-                <li class="list-group-item d-flex justify-content-between lh-condensed">
-                    <div>
-                        <h6 class="my-0">{{ $item->product->name }}</h6>
-                        <small class="text-muted">Quantidade: {{ $item->quantity }}</small>
-                    </div>
-                    <span class="text-muted">R$ {{ number_format($item->quantity * $item->product->price, 2, ',', '.') }}</span>
-                </li>
-                @endforeach
-
-                <li class="list-group-item d-flex justify-content-between">
-                    <span>Subtotal</span>
-                    <strong>R$ {{ number_format($subtotal, 2, ',', '.') }}</strong>
-                </li>
-                <li class="list-group-item d-flex justify-content-between">
-                    <span>Frete</span>
-                    <strong>R$ {{ number_format($shippingCost, 2, ',', '.') }}</strong>
-                </li>
-                <li class="list-group-item d-flex justify-content-between">
-                    <span>Impostos</span>
-                    <strong>R$ {{ number_format($tax, 2, ',', '.') }}</strong>
-                </li>
-                <li class="list-group-item d-flex justify-content-between bg-light">
-                    <span class="text-success">Total</span>
-                    <strong class="text-success">R$ {{ number_format($total, 2, ',', '.') }}</strong>
-                </li>
-            </ul>
+        <div class="mx-auto w-full lg:w-5/12 flex-none mb-8 lg:mb-0 lg:order-2">
+            <div class="space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-semibold text-gray-900">Seu Carrinho</h2>
+                    <span class="inline-flex items-center justify-center h-6 w-6 rounded-full bg-primary-100 text-xs font-medium text-primary-800">{{ $cart->items->count() }}</span>
+                </div>
+                
+                <div class="border-b border-gray-200 pb-4">
+                    <ul class="divide-y divide-gray-200">
+                        @foreach($cart->items as $item)
+                        <li class="py-3 flex justify-between items-center">
+                            <div class="flex-1">
+                                @php
+                                    $title = $item->product->productable->title ?? $item->product->name ?? 'Produto';
+                                @endphp
+                                <h3 class="text-sm font-medium text-gray-900">{{ $title }}</h3>
+                                <p class="text-xs text-gray-500">Quantidade: {{ $item->quantity }}</p>
+                            </div>
+                            <span class="text-sm font-medium text-gray-900">R$ {{ number_format($item->quantity * $item->product->price, 2, ',', '.') }}</span>
+                        </li>
+                        @endforeach
+                    </ul>
+                </div>
+                
+                <div class="space-y-2">
+                    <dl class="flex items-center justify-between gap-4">
+                        <dt class="text-base font-normal text-gray-500">Subtotal</dt>
+                        <dd class="text-base font-medium text-gray-900">R$ {{ number_format($subtotal, 2, ',', '.') }}</dd>
+                    </dl>
+                    
+                    <dl class="flex items-center justify-between gap-4">
+                        <dt class="text-base font-normal text-gray-500">Frete</dt>
+                        <dd class="text-base font-medium text-gray-900">R$ {{ number_format($shippingCost, 2, ',', '.') }}</dd>
+                    </dl>
+                    
+                    <dl class="flex items-center justify-between gap-4 border-t border-gray-200 pt-4">
+                        <dt class="text-lg font-bold text-gray-900">Total</dt>
+                        <dd class="text-lg font-bold text-gray-900">R$ {{ number_format($total, 2, ',', '.') }}</dd>
+                    </dl>
+                </div>
+            </div>
         </div>
 
         <!-- Formulário de Checkout -->
-        <div class="col-md-7 order-md-1">
-            <form id="payment-form" action="{{ route('site.checkout.process') }}" method="POST">
+        <div class="mx-auto w-full lg:w-7/12 flex-none lg:order-1">
+            <form id="payment-form" action="{{ route('site.checkout.process') }}" method="POST" class="space-y-6">
                 @csrf
-                <input type="hidden" name="card_token" id="card_token" value="">
-                <input type="hidden" name="sender_hash" id="sender_hash" value="">
 
                 <!-- Endereço de Entrega -->
-                <h4 class="mb-3">Endereço de Entrega</h4>
-                @if(auth()->user()->addresses->count() > 0)
-                    <div class="mb-3">
-                        <select class="form-control" name="shipping_address_id" required>
-                            <option value="">Selecione um endereço...</option>
-                            @foreach(auth()->user()->addresses as $address)
-                                <option value="{{ $address->id }}" {{ $address->is_default ? 'selected' : '' }}>
-                                    {{ $address->street }}, {{ $address->number }} - {{ $address->neighborhood }}, {{ $address->city }}/{{ $address->state }} - CEP: {{ $address->zip_code }}
-                                </option>
-                            @endforeach
-                        </select>
+                <div class="space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-xl font-semibold text-gray-900">Endereço de Entrega</h2>
+                        <button type="button" data-modal-target="address-modal" data-modal-toggle="address-modal" class="text-sm font-medium text-primary-600 hover:underline inline-flex items-center">
+                            <svg class="mr-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                            Alterar Endereço
+                        </button>
                     </div>
-                    <div class="mb-3">
-                        <a href="{{ route('site.profile.addresses.create') }}" class="btn btn-outline-secondary btn-sm">Adicionar Novo Endereço</a>
-                    </div>
-                @else
-                    <div class="alert alert-warning">
-                        Você não possui endereços cadastrados. <a href="{{ route('site.profile.addresses.create') }}">Cadastre um endereço</a> para continuar.
-                    </div>
-                @endif
+                    
+                    @if($addresses->count() > 0)
+                        <div id="address-selection-container" class="mb-4">
+                            <div class="bg-gray-50 rounded-lg p-4">
+                                @php
+                                    $defaultAddress = $addresses->where('is_default', true)->first() ?? $addresses->first();
+                                @endphp
+                                <input type="hidden" name="shipping_address_id" id="shipping_address_id" value="{{ $defaultAddress->id }}">
+                                
+                                <div id="selected-address-display">
+                                    <h3 class="text-base font-medium text-gray-900">{{ $defaultAddress->type }}</h3>
+                                    <p class="text-sm text-gray-500 mt-1">
+                                        {{ $defaultAddress->street }}, {{ $defaultAddress->number }}
+                                        @if($defaultAddress->complement)
+                                            - {{ $defaultAddress->complement }}
+                                        @endif
+                                    </p>
+                                    <p class="text-sm text-gray-500">
+                                        {{ $defaultAddress->neighborhood }}, {{ $defaultAddress->city }}/{{ $defaultAddress->state }} - CEP: {{ substr_replace($defaultAddress->zip_code, '-', 5, 0) }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    @else
+                        <div class="p-4 mb-4 text-sm text-yellow-800 rounded-lg bg-yellow-50" role="alert">
+                            <span class="font-medium">Atenção!</span> Você não possui endereços cadastrados. 
+                            <button type="button" data-modal-target="new-address-modal" data-modal-toggle="new-address-modal" class="font-medium underline hover:text-yellow-900">Cadastre um endereço</button> para continuar.
+                        </div>
+                    @endif
+                </div>
 
                 <!-- Seção de Frete -->
-                <h4 class="mb-3">Informações de Frete</h4>
-                @if(session('shipping_postal_code') && session('selected_shipping_option'))
-                    <div class="card mb-3">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center">
+                <div class="space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-xl font-semibold text-gray-900">Informações de Frete</h2>
+                        <button type="button" data-modal-target="shipping-modal" data-modal-toggle="shipping-modal" class="text-sm font-medium text-primary-600 hover:underline inline-flex items-center">
+                            <svg class="mr-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                            Alterar Frete
+                        </button>
+                    </div>
+                    
+                    @if(session('shipping_postal_code') && session('selected_shipping_option'))
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <div class="flex justify-between items-center">
                                 <div>
-                                    <h5 class="card-title mb-1">{{ session('selected_shipping_name') ?? 'Frete selecionado' }}</h5>
-                                    <p class="card-text text-muted mb-0">
-                                        <small>CEP: {{ substr_replace(session('shipping_postal_code'), '-', 5, 0) }}</small>
+                                    <h3 class="text-base font-medium text-gray-900">{{ session('selected_shipping_name') ?? 'Frete selecionado' }}</h3>
+                                    <p class="text-sm text-gray-500 mt-1">
+                                        CEP: {{ substr_replace(session('shipping_postal_code'), '-', 5, 0) }}
                                     </p>
                                     @if(isset($shippingOptions))
                                         @foreach($shippingOptions as $option)
                                             @if($option['id'] == session('selected_shipping_option'))
-                                                <p class="card-text text-muted mb-0">
-                                                    <small>Prazo de entrega: {{ $option['delivery_time'] }} dias úteis</small>
+                                                <p class="text-sm text-gray-500">
+                                                    Prazo de entrega: {{ $option['delivery_time'] }} dias úteis
                                                 </p>
                                             @endif
                                         @endforeach
                                     @endif
                                 </div>
                                 <div>
-                                    <span class="font-weight-bold">R$ {{ number_format(session('selected_shipping_price'), 2, ',', '.') }}</span>
+                                    <span class="text-lg font-semibold text-gray-900">R$ {{ number_format(session('selected_shipping_price'), 2, ',', '.') }}</span>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="mb-3">
-                        <a href="{{ route('site.cart.index') }}#shipping-calculator" class="btn btn-outline-secondary btn-sm">Alterar Frete</a>
-                    </div>
-                @else
-                    <div class="alert alert-warning">
-                        Você ainda não selecionou uma opção de frete. <a href="{{ route('site.cart.index') }}#shipping-calculator">Calcule o frete</a> antes de continuar.
-                    </div>
-                @endif
+                    @else
+                        <div class="p-4 text-sm text-yellow-800 rounded-lg bg-yellow-50" role="alert">
+                            <span class="font-medium">Atenção!</span> Você ainda não selecionou uma opção de frete. 
+                            <button type="button" data-modal-target="shipping-modal" data-modal-toggle="shipping-modal" class="font-medium underline hover:text-yellow-900">Calcule o frete</button> antes de continuar.
+                        </div>
+                    @endif
+                </div>
 
                 <!-- Método de Pagamento -->
-                <h4 class="mb-3">Método de Pagamento</h4>
-                <div class="d-block my-3">
-                    <div class="form-check">
-                        <input id="credit_card" name="payment_method" type="radio" class="form-check-input" value="credit_card" checked required>
-                        <label class="form-check-label" for="credit_card">Cartão de Crédito</label>
-                    </div>
-                    <div class="form-check">
-                        <input id="boleto" name="payment_method" type="radio" class="form-check-input" value="boleto" required>
-                        <label class="form-check-label" for="boleto">Boleto Bancário</label>
-                    </div>
-                    <div class="form-check">
-                        <input id="pix" name="payment_method" type="radio" class="form-check-input" value="pix" required>
-                        <label class="form-check-label" for="pix">PIX</label>
+                <div class="space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
+                    <h2 class="text-xl font-semibold text-gray-900">Método de Pagamento</h2>
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-center">
+                            <input id="credit_card" name="payment_method" type="radio" value="credit_card" checked required class="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 focus:ring-primary-500 focus:ring-2">
+                            <label for="credit_card" class="ms-2 text-sm font-medium text-gray-900 flex items-center">
+                                <svg class="w-6 h-6 text-gray-800 me-2" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 14"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 9h2m3 0h5M1 5h18M1 1h18v12H1z"/></svg>
+                                Cartão de Crédito
+                            </label>
+                        </div>
+                        <div class="flex items-center">
+                            <input id="pix" name="payment_method" type="radio" value="pix" required class="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 focus:ring-primary-500 focus:ring-2">
+                            <label for="pix" class="ms-2 text-sm font-medium text-gray-900 flex items-center">
+                                <svg class="w-6 h-6 text-gray-800 me-2" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 16 20"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5v10M3 5a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm9-10v.4A3.6 3.6 0 0 1 8.4 9H6.61A3.6 3.6 0 0 0 3 12.605M14.458 3a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"/></svg>
+                                PIX
+                            </label>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Informações do Cartão (exibido condicionalmente via JavaScript) -->
-                <div id="credit-card-details">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="cc-name">Nome no cartão</label>
-                            <input type="text" class="form-control" id="cc-name" placeholder="">
-                            <small class="text-muted">Nome completo como mostrado no cartão</small>
-                            <div class="invalid-feedback">
-                                Nome no cartão é obrigatório
-                            </div>
+                <!-- Cartão de Crédito -->
+                <div id="credit-card-form" class="space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-6 mt-4">
+                    <h2 class="text-xl font-semibold text-gray-900">Detalhes do Cartão</h2>
+                    <input type="hidden" name="card_token" id="card_token" value="">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="col-span-1">
+                            <label for="cc-name" class="block mb-2 text-sm font-medium text-gray-900">Nome no Cartão</label>
+                            <input type="text" class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5" id="cc-name" placeholder="Nome como impresso no cartão" required>
+                            <small class="text-xs text-gray-500 mt-1 block">Nome completo como mostrado no cartão</small>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="cc-cpf">CPF do titular</label>
-                            <input type="text" class="form-control" id="cc-cpf" placeholder="123.456.789-00">
-                            <div class="invalid-feedback">
-                                CPF é obrigatório
-                            </div>
+                        <div class="col-span-1">
+                            <label for="cc-number" class="block mb-2 text-sm font-medium text-gray-900">Número do Cartão</label>
+                            <input type="text" class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5" id="cc-number" placeholder="0000 0000 0000 0000" required>
                         </div>
                     </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="cc-birth-date">Data de Nascimento</label>
-                            <input type="date" class="form-control" id="cc-birth-date">
-                            <div class="invalid-feedback">
-                                Data de nascimento é obrigatória
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="cc-number">Número do cartão</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" id="cc-number" placeholder="1234 1234 1234 1234" required>
-                                <div class="input-group-append">
-                                    <span class="input-group-text">
-                                        <i id="card-brand-icon" class="fas fa-credit-card"></i>
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="invalid-feedback">
-                                Número do cartão é obrigatório
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-3 mb-3">
-                            <label for="cc-expiration-month">Mês</label>
-                            <select class="form-control" id="cc-expiration-month" required>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label for="cc-expiration-month" class="block mb-2 text-sm font-medium text-gray-900">Mês de Expiração</label>
+                            <select class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5" id="cc-expiration-month" required>
                                 <option value="">Mês</option>
-                                @for ($i = 1; $i <= 12; $i++)
-                                    <option value="{{ str_pad($i, 2, '0', STR_PAD_LEFT) }}">{{ str_pad($i, 2, '0', STR_PAD_LEFT) }}</option>
+                                @for($i = 1; $i <= 12; $i++)
+                                    <option value="{{ sprintf('%02d', $i) }}">{{ sprintf('%02d', $i) }}</option>
                                 @endfor
                             </select>
-                            <div class="invalid-feedback">
-                                Mês de expiração obrigatório
-                            </div>
                         </div>
-                        <div class="col-md-3 mb-3">
-                            <label for="cc-expiration-year">Ano</label>
-                            <select class="form-control" id="cc-expiration-year" required>
+                        <div>
+                            <label for="cc-expiration-year" class="block mb-2 text-sm font-medium text-gray-900">Ano de Expiração</label>
+                            <select class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5" id="cc-expiration-year" required>
                                 <option value="">Ano</option>
-                                @for ($i = date('Y'); $i <= date('Y') + 15; $i++)
+                                @for($i = date('Y'); $i <= date('Y') + 15; $i++)
                                     <option value="{{ $i }}">{{ $i }}</option>
                                 @endfor
                             </select>
-                            <div class="invalid-feedback">
-                                Ano de expiração obrigatório
-                            </div>
                         </div>
-                        <div class="col-md-3 mb-3">
-                            <label for="cc-cvv">CVV</label>
-                            <input type="text" class="form-control" id="cc-cvv" placeholder="123" required>
-                            <div class="invalid-feedback">
-                                Código de segurança obrigatório
-                            </div>
+                        <div>
+                            <label for="cc-cvv" class="block mb-2 text-sm font-medium text-gray-900">CVV</label>
+                            <input type="text" class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5" id="cc-cvv" placeholder="000" required>
                         </div>
-                        <div class="col-md-3 mb-3">
-                            <label for="installments">Parcelas</label>
-                            <select class="form-control" id="installments" name="installments">
-                                <option value="1">1x de R$ {{ number_format($total, 2, ',', '.') }}</option>
-                                <!-- As demais parcelas serão preenchidas via JavaScript -->
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="cc-installments" class="block mb-2 text-sm font-medium text-gray-900">Parcelas</label>
+                            <select class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5" id="cc-installments" name="installments" required>
+                                <option value="1">1x de R$ {{ number_format($total, 2, ',', '.') }} (sem juros)</option>
+                                @if($total >= 100)
+                                <option value="2">2x de R$ {{ number_format($total / 2, 2, ',', '.') }} (sem juros)</option>
+                                <option value="3">3x de R$ {{ number_format($total / 3, 2, ',', '.') }} (sem juros)</option>
+                                @endif
                             </select>
+                        </div>
+                        <div>
+                            <label for="cc-document-number" class="block mb-2 text-sm font-medium text-gray-900">CPF do Titular</label>
+                            <input type="text" class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5" id="cc-document-number" name="document_number" placeholder="000.000.000-00" required>
                         </div>
                     </div>
                 </div>
-
-                <!-- Campos ocultos para armazenar informações do cartão -->
+                
+                <!-- PIX -->
+                <div id="pix-form" class="space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-6 mt-4 hidden">
+                    <h2 class="text-xl font-semibold text-gray-900">Pagamento com PIX</h2>
+                    <p class="text-sm text-gray-600">Ao finalizar o pedido, você receberá um QR Code para realizar o pagamento via PIX.</p>
+                    <div class="bg-indigo-50 border border-indigo-200 text-indigo-800 p-4 rounded-lg">
+                        <div class="flex items-start">
+                            <svg class="w-5 h-5 text-indigo-600 mt-0.5 mr-2" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3H8a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z"/>
+                            </svg>
+                            <div>
+                                <p class="text-sm font-medium">O pagamento por PIX é processado imediatamente. Após a confirmação, seu pedido será enviado para separação.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Campos ocultos para armazenar informações do cartão, se necessário para a integração -->
                 <input type="hidden" name="card_holder_name" id="card_holder_name">
-                <input type="hidden" name="card_holder_cpf" id="card_holder_cpf">
-                <input type="hidden" name="card_holder_birth_date" id="card_holder_birth_date">
+                <input type="hidden" name="card_number" id="card_number">
+                <input type="hidden" name="card_cvv" id="card_cvv">
+                <input type="hidden" name="card_expiration_month" id="card_expiration_month">
+                <input type="hidden" name="card_expiration_year" id="card_expiration_year">
 
-                <!-- Botão de Finalizar Compra -->
-                <hr class="mb-4">
-                <button class="btn btn-primary btn-lg btn-block" type="submit" id="checkout-button">Finalizar Compra</button>
+                <div class="mt-6">
+                    <button type="submit" class="w-full inline-flex justify-center items-center py-3 px-5 text-base font-medium text-center text-white rounded-lg bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 dark:focus:ring-primary-900">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path></svg>
+                        Finalizar Pedido Seguro
+                    </button>
+                </div>
             </form>
         </div>
     </div>
 </div>
 
+<!-- Incluir modais -->
+@include('site.checkout.address-modal')
+
 @push('scripts')
-<!-- Script do PagSeguro -->
-<script type="text/javascript" src="{{ config('pagseguro.sandbox') ? 'https://stc.sandbox.pagseguro.uol.com.br/pagseguro/api/v2/checkout/pagseguro.directpayment.js' : 'https://stc.pagseguro.uol.com.br/pagseguro/api/v2/checkout/pagseguro.directpayment.js' }}"></script>
+<!-- Inicialização do Flowbite (para modais) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.0.0/flowbite.min.js"></script>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Inicialização do PagSeguro
-        PagSeguroDirectPayment.setSessionId('{{ $sessionId }}');
+<!-- Script de gerenciamento do checkout -->
+<script src="{{ asset('js/checkout.js') }}"></script>
 
-        // Elementos do formulário
-        const paymentForm = document.getElementById('payment-form');
-        const paymentMethodRadios = document.querySelectorAll('input[name="payment_method"]');
-        const cardDetails = document.getElementById('credit-card-details');
 
-        // Campos do cartão
-        const cardNumber = document.getElementById('cc-number');
-        const cardBrandIcon = document.getElementById('card-brand-icon');
-        const cardExpirationMonth = document.getElementById('cc-expiration-month');
-        const cardExpirationYear = document.getElementById('cc-expiration-year');
-        const cardCvv = document.getElementById('cc-cvv');
-        const cardHolderName = document.getElementById('cc-name');
-        const cardHolderCpf = document.getElementById('cc-cpf');
-        const cardHolderBirthDate = document.getElementById('cc-birth-date');
-        const installmentsSelect = document.getElementById('installments');
-
-        // Campos ocultos
-        const cardTokenInput = document.getElementById('card_token');
-        const senderHashInput = document.getElementById('sender_hash');
-        const cardHolderNameInput = document.getElementById('card_holder_name');
-        const cardHolderCpfInput = document.getElementById('card_holder_cpf');
-        const cardHolderBirthDateInput = document.getElementById('card_holder_birth_date');
-
-        // Alternar visibilidade do formulário de cartão
-        function toggleCardDetails() {
-            const selectedPaymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
-            cardDetails.style.display = selectedPaymentMethod === 'credit_card' ? 'block' : 'none';
-        }
-
-        // Detectar bandeira do cartão
-        cardNumber.addEventListener('input', function() {
-            if (cardNumber.value.length >= 6) {
-                PagSeguroDirectPayment.getBrand({
-                    cardBin: cardNumber.value.replace(/\D/g, '').substring(0, 6),
-                    success: function(response) {
-                        const brand = response.brand.name;
-                        cardBrandIcon.className = `fab fa-cc-${brand.toLowerCase()}`;
-
-                        // Obter parcelas disponíveis
-                        getInstallments(brand);
-                    },
-                    error: function(error) {
-                        console.error('Erro ao detectar bandeira do cartão:', error);
-                        cardBrandIcon.className = 'fas fa-credit-card';
-                    }
-                });
-            } else {
-                cardBrandIcon.className = 'fas fa-credit-card';
-            }
-        });
-
-        // Obter parcelas disponíveis
-        function getInstallments(brand) {
-            PagSeguroDirectPayment.getInstallments({
-                amount: {{ $total }},
-                brand: brand,
-                maxInstallmentNoInterest: 3, // Até 3x sem juros
-                success: function(response) {
-                    // Limpar opções atuais
-                    installmentsSelect.innerHTML = '';
-
-                    // Adicionar novas opções
-                    response.installments[brand].forEach(function(option) {
-                        const installmentText = option.quantity === 1
-                            ? `${option.quantity}x de R$ ${option.installmentAmount.toFixed(2).replace('.', ',')} (à vista)`
-                            : `${option.quantity}x de R$ ${option.installmentAmount.toFixed(2).replace('.', ',')}${option.interestFree ? ' sem juros' : ' com juros'}`;
-
-                        const opt = document.createElement('option');
-                        opt.value = option.quantity;
-                        opt.textContent = installmentText;
-                        installmentsSelect.appendChild(opt);
-                    });
-                },
-                error: function(error) {
-                    console.error('Erro ao obter parcelas:', error);
-                }
-            });
-        }
-
-        // Gerar token do cartão
-        function generateCardToken() {
-            const cardData = {
-                cardNumber: cardNumber.value.replace(/\D/g, ''),
-                cvv: cardCvv.value,
-                expirationMonth: cardExpirationMonth.value,
-                expirationYear: cardExpirationYear.value,
-                success: function(response) {
-                    cardTokenInput.value = response.card.token;
-
-                    // Armazenar informações do titular
-                    cardHolderNameInput.value = cardHolderName.value;
-                    cardHolderCpfInput.value = cardHolderCpf.value;
-                    cardHolderBirthDateInput.value = cardHolderBirthDate.value;
-
-                    // Obter o hash do comprador
-                    getSenderHash();
-                },
-                error: function(error) {
-                    console.error('Erro ao gerar token do cartão:', error);
-                    alert('Ocorreu um erro ao processar os dados do cartão. Por favor, verifique os dados e tente novamente.');
-                }
-            };
-
-            PagSeguroDirectPayment.createCardToken(cardData);
-        }
-
-        // Obter hash do comprador
-        function getSenderHash() {
-            senderHashInput.value = PagSeguroDirectPayment.getSenderHash();
-
-            // Enviar formulário
-            paymentForm.submit();
-        }
-
-        // Adicionar listeners
-        paymentMethodRadios.forEach(function(radio) {
-            radio.addEventListener('change', toggleCardDetails);
-        });
-
-        // Submissão do formulário
-        paymentForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            const selectedPaymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
-
-            if (selectedPaymentMethod === 'credit_card') {
-                // Validar campos do cartão
-                if (!cardNumber.value || !cardExpirationMonth.value || !cardExpirationYear.value || !cardCvv.value || !cardHolderName.value || !cardHolderCpf.value || !cardHolderBirthDate.value) {
-                    alert('Por favor, preencha todos os campos do cartão de crédito.');
-                    return;
-                }
-
-                // Gerar token do cartão
-                generateCardToken();
-            } else {
-                // Para boleto ou PIX, apenas enviar o formulário
-                paymentForm.submit();
-            }
-        });
-
-        // Inicializações
-        toggleCardDetails();
-    });
-</script>
 @endpush
-@endsection
+</x-app-layout>

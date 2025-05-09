@@ -6,22 +6,26 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Cart;
 use App\Models\Order;
-use App\Services\PagSeguroService;
+use App\Services\RedeItauService;
+use App\Http\Controllers\Site\CartController;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class CheckoutController extends Controller
 {
-    protected $pagSeguroService;
+    protected $redeItauService;
 
-    public function __construct(PagSeguroService $pagSeguroService)
+    public function __construct(RedeItauService $redeItauService)
     {
-        $this->pagSeguroService = $pagSeguroService;
+        $this->redeItauService = $redeItauService;
     }
 
     public function index(Request $request)
     {
-        $cart = $request->user()->cart ?? Cart::where('session_id', session()->getId())->first();
+        // Obter o carrinho através do CartController para manter consistência
+        $cartController = app(CartController::class);
+        $cart = $cartController->getOrCreateCart();
 
         if (!$cart || $cart->items->isEmpty()) {
             return redirect()->route('site.cart.index')->with('error', 'Seu carrinho está vazio.');
@@ -35,28 +39,37 @@ class CheckoutController extends Controller
             return redirect()->route('site.cart.index')->with('error', 'Por favor, calcule e selecione uma opção de frete antes de finalizar a compra.');
         }
 
-        // Obter a sessão do PagSeguro
-        $sessionId = $this->pagSeguroService->getSessionId();
-        if (!$sessionId) {
-            return redirect()->route('site.cart.index')->with('error', 'Não foi possível iniciar a sessão de pagamento. Tente novamente mais tarde.');
-        }
-
         // Calcular valores
         $subtotal = $cart->items->sum(function ($item) {
             return $item->quantity * $item->product->price;
         });
         $shippingCost = session('selected_shipping_price', 0);
-        $tax = $subtotal * 0.1; // 10% de imposto
-        $total = $subtotal + $shippingCost + $tax;
+        $tax = 0; // Removido os impostos conforme solicitado
+        $total = $subtotal + $shippingCost;
+        
+        // Obter endereços do usuário - carregando explicitamente para garantir que seja uma coleção
+        $addresses = $request->user()->addresses()->get();
+        
+        // Obter opções de frete disponíveis
+        $shippingOptions = [];
+        if ($shippingPostalCode) {
+            $shippingOptions = session('shipping_options', []);
+        }
 
-        return view('site.checkout.index', compact('cart', 'sessionId', 'subtotal', 'shippingCost', 'tax', 'total'));
+        return view('site.checkout.index', compact('cart', 'subtotal', 'shippingCost', 'tax', 'total', 'addresses', 'shippingOptions'));
     }
-
+    
     public function process(Request $request)
     {
         $request->validate([
             'shipping_address_id' => 'required|exists:addresses,id',
-            'payment_method' => 'required|string'
+            'payment_method' => 'required|string',
+            'installments' => 'required_if:payment_method,credit_card|integer|min:1|max:12',
+            'card_holder_name' => 'required_if:payment_method,credit_card|string|max:255',
+            'card_number' => 'required_if:payment_method,credit_card|string|min:13|max:19',
+            'card_expiry_month' => 'required_if:payment_method,credit_card|string|size:2',
+            'card_expiry_year' => 'required_if:payment_method,credit_card|string|size:4',
+            'card_cvv' => 'required_if:payment_method,credit_card|string|min:3|max:4',
         ]);
         
         // Verificar se um frete foi selecionado
@@ -65,7 +78,9 @@ class CheckoutController extends Controller
                 ->with('error', 'Por favor, calcule e selecione uma opção de frete antes de finalizar a compra.');
         }
 
-        $cart = $request->user()->cart ?? Cart::where('session_id', session()->getId())->first();
+        // Obter o carrinho através do CartController para manter consistência
+        $cartController = app(CartController::class);
+        $cart = $cartController->getOrCreateCart();
 
         if (!$cart || $cart->items->isEmpty()) {
             return redirect()->route('site.cart.index')->with('error', 'Seu carrinho está vazio.');
@@ -76,9 +91,11 @@ class CheckoutController extends Controller
         try {
             // Verificar estoque final
             foreach ($cart->items as $item) {
-                $vinylSec = $item->product->productable->vinylSec;
-                if ($vinylSec->quantity < $item->quantity) {
-                    throw new \Exception("Estoque insuficiente para o produto: {$item->product->name}");
+                if (isset($item->product->productable) && isset($item->product->productable->vinylSec)) {
+                    $vinylSec = $item->product->productable->vinylSec;
+                    if ($vinylSec->quantity < $item->quantity) {
+                        throw new \Exception("Estoque insuficiente para o produto: {$item->product->productable->title}");
+                    }
                 }
             }
 
@@ -87,11 +104,10 @@ class CheckoutController extends Controller
                 return $item->quantity * $item->product->price;
             });
             $shippingCost = session('selected_shipping_price', 0);
-            $tax = $subtotal * 0.1; // 10% de imposto
-            $total = $subtotal + $shippingCost + $tax;
+            $tax = 0; // Removido os impostos conforme solicitado
+            $total = $subtotal + $shippingCost;
 
-            // Criar pedido
-            // Buscar informações de frete selecionado na sessão
+            // Obter informações de frete selecionado na sessão
             $shippingServiceId = session('selected_shipping_option');
             $shippingServiceName = session('selected_shipping_name');
             $shippingDeliveryTime = null;
@@ -110,6 +126,10 @@ class CheckoutController extends Controller
                 }
             }
             
+            // Gerar um código de referência para o pedido
+            $reference = 'INV-' . strtoupper(Str::random(8));
+            
+            // Criar o pedido
             $order = Order::create([
                 'user_id' => $request->user()->id,
                 'total' => $total,
@@ -120,9 +140,18 @@ class CheckoutController extends Controller
                 'tax' => $tax,
                 'status' => 'pending',
                 'payment_status' => 'pending',
+                'payment_method' => $request->payment_method,
                 'shipping_address_id' => $request->shipping_address_id,
                 'billing_address_id' => $request->shipping_address_id, // Usando o mesmo endereço para faturamento
-                'notes' => $request->notes ?? null
+                'notes' => $request->notes ?? null,
+                'transaction_code' => $reference
+            ]);
+            
+            // Registrar o status inicial no histórico
+            $order->statusHistory()->create([
+                'status' => 'pending',
+                'comment' => 'Pedido criado. Aguardando pagamento.',
+                'created_by' => $request->user()->id
             ]);
 
             // Criar itens do pedido e atualizar estoque
@@ -131,11 +160,22 @@ class CheckoutController extends Controller
                     'product_id' => $item->product_id,
                     'quantity' => $item->quantity,
                     'price' => $item->product->price,
+                    'total' => $item->quantity * $item->product->price
                 ]);
 
-                $vinylSec = $item->product->productable->vinylSec;
-                $vinylSec->quantity -= $item->quantity;
-                $vinylSec->save();
+                // Atualizar estoque apenas se for vinil secundário (que tem controle de estoque)
+                if (isset($item->product->productable) && isset($item->product->productable->vinylSec)) {
+                    $vinylSec = $item->product->productable->vinylSec;
+                    $vinylSec->quantity -= $item->quantity;
+                    $vinylSec->save();
+                }
+            }
+            
+            // Obter o endereço de entrega para processar o pagamento
+            $shippingAddress = $request->user()->addresses()->find($request->shipping_address_id);
+            
+            if (!$shippingAddress) {
+                throw new \Exception('Endereço de entrega inválido.');
             }
 
             // Processar pagamento de acordo com o método selecionado
@@ -143,22 +183,78 @@ class CheckoutController extends Controller
 
             switch ($request->payment_method) {
                 case 'credit_card':
-                    $cardData = [
-                        'token' => $request->card_token,
-                        'installments' => $request->installments,
-                        'holder' => $request->card_holder_name,
-                        'cpf' => $request->card_holder_cpf,
-                        'birth_date' => $request->card_holder_birth_date,
+                    // Obter dados do cliente e endereço para processar o pagamento
+                    $customer = [
+                        'name' => $request->user()->name,
+                        'email' => $request->user()->email,
+                        'document' => $request->user()->cpf ?? null,
+                        'phone' => $request->user()->phone ?? null
                     ];
-                    $paymentResult = $this->pagSeguroService->processCreditCardPayment($order, $cardData);
-                    break;
-
-                case 'boleto':
-                    $paymentResult = $this->pagSeguroService->processBoletoPayment($order);
+                    
+                    $address = [
+                        'street' => $shippingAddress->street,
+                        'number' => $shippingAddress->number,
+                        'complement' => $shippingAddress->complement,
+                        'zip_code' => $shippingAddress->zip_code,
+                        'city' => $shippingAddress->city,
+                        'state' => $shippingAddress->state,
+                        'country' => 'Brasil'
+                    ];
+                    
+                    // Preparar dados para a API da Rede Itaú
+                    $paymentData = [
+                        'reference' => $reference,
+                        'amount' => $total,
+                        'card_holder_name' => $request->card_holder_name,
+                        'card_number' => preg_replace('/\D/', '', $request->card_number),
+                        'expiration_month' => $request->card_expiry_month,
+                        'expiration_year' => $request->card_expiry_year,
+                        'security_code' => $request->card_cvv,
+                        'installments' => $request->installments,
+                        'customer' => $customer,
+                        'address' => $address,
+                        'auto_capture' => true, // Capturar automaticamente
+                        'soft_descriptor' => config('app.name')
+                    ];
+                    
+                    $paymentResult = $this->redeItauService->authorize($paymentData);
                     break;
 
                 case 'pix':
-                    $paymentResult = $this->pagSeguroService->processPixPayment($order);
+                    // Obter dados do cliente e endereço para processar o pagamento
+                    $customer = [
+                        'name' => $request->user()->name,
+                        'email' => $request->user()->email,
+                        'document' => $request->user()->cpf ?? null,
+                        'phone' => $request->user()->phone ?? null
+                    ];
+                    
+                    // Preparar dados para a API da Rede Itaú
+                    $pixData = [
+                        'reference' => $reference,
+                        'amount' => $total,
+                        'customer' => $customer,
+                        'soft_descriptor' => config('app.name'),
+                        'expiration' => 3600 // Tempo em segundos (1 hora)
+                    ];
+                    
+                    // Criar transação PIX via serviço da Rede Itaú
+                    $paymentResult = $this->redeItauService->createPix($pixData);
+                    
+                    // Se bem-sucedido, extrair informações importantes
+                    if ($paymentResult['success']) {
+                        // Obter QR code e código PIX da resposta
+                        $pixQrCode = $paymentResult['data']['pix']['qrcode'] ?? '';
+                        $pixEmv = $paymentResult['data']['pix']['emv'] ?? '';
+                        $pixId = $paymentResult['data']['pix']['id'] ?? '';
+                        
+                        // Armazenar na sessão para mostrar na página de pagamento
+                        session([
+                            'pix_qrcode' => $pixQrCode,
+                            'pix_code' => $pixEmv,
+                            'pix_id' => $pixId
+                        ]);
+                    }
                     break;
 
                 default:
@@ -166,32 +262,38 @@ class CheckoutController extends Controller
             }
 
             if (!$paymentResult['success']) {
-                throw new \Exception($paymentResult['message']);
+                throw new \Exception($paymentResult['message'] ?? 'Erro ao processar o pagamento. Tente novamente.');
             }
 
             // Atualizar pedido com informações do pagamento
-            $order->transaction_code = $paymentResult['transaction_code'] ?? null;
-            $order->payment_method = $request->payment_method;
+            if ($request->payment_method === 'credit_card' && isset($paymentResult['data']['tid'])) {
+                $order->transaction_code = $paymentResult['data']['tid'];
+                $order->payment_status = 'paid'; // Autorizado e capturado
+                $order->payment_details = json_encode($paymentResult['data']);
+            } elseif ($request->payment_method === 'pix') {
+                $order->payment_status = 'pending'; // Aguardando pagamento
+                $order->payment_details = json_encode(['pix_code' => $paymentResult['pix_code']]);
+            }
+            
             $order->save();
 
             // Limpar o carrinho
             $cart->items()->delete();
             $cart->delete();
+            
+            // Limpar dados de frete da sessão
+            session()->forget(['shipping_postal_code', 'selected_shipping_price', 'selected_shipping_option', 'selected_shipping_name']);
 
             DB::commit();
 
             // Redirecionar com base no método de pagamento
-            if ($request->payment_method === 'boleto' && isset($paymentResult['boleto_url'])) {
-                return redirect()->route('site.payments.boleto', ['order' => $order->id])
-                    ->with('success', 'Pedido realizado com sucesso! Efetue o pagamento do boleto para completar a compra.')
-                    ->with('boleto_url', $paymentResult['boleto_url']);
-            } else if ($request->payment_method === 'pix' && isset($paymentResult['qr_code_url'])) {
+            if ($request->payment_method === 'pix') {
                 return redirect()->route('site.payments.pix', ['order' => $order->id])
-                    ->with('success', 'Pedido realizado com sucesso! Escaneie o QR Code para completar a compra.')
-                    ->with('qr_code_url', $paymentResult['qr_code_url']);
+                    ->with('success', 'Pedido realizado com sucesso! Realize o pagamento via PIX para completar a compra.')
+                    ->with('pix_code', $paymentResult['pix_code']);
             } else {
                 return redirect()->route('site.orders.show', $order)
-                    ->with('success', 'Pedido realizado com sucesso! ' . ($paymentResult['message'] ?? ''));
+                    ->with('success', 'Pedido realizado com sucesso! Seu pagamento foi aprovado.');
             }
         } catch (\Exception $e) {
             DB::rollBack();

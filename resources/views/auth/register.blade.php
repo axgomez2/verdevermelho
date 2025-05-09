@@ -7,9 +7,13 @@
             </div>
 
             <div class="p-6">
-                <form method="POST" action="{{ route('register') }}" class="space-y-6">
+                <form method="POST" action="{{ route('register') }}" class="space-y-6" data-form-type="registration" autocomplete="on">
                     @csrf
 
+                    <!-- Note de segurança -->                    
+                    <div class="text-xs text-gray-500 mb-4 p-2 bg-yellow-50 rounded border border-yellow-100">
+                        <p class="flex items-center"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 mr-1 text-yellow-600"><path fill-rule="evenodd" d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd" /></svg> Este é o formulário oficial de cadastro da Embaixada Dance Music. Suas informações estão seguras e não serão compartilhadas.</p>
+                    </div>
                     <!-- Nome -->
                     <div class="space-y-2">
                         <label for="name" class="text-sm font-medium text-gray-700">Nome</label>
@@ -68,10 +72,20 @@
                         <x-input-error :messages="$errors->get('password_confirmation')" class="mt-1" />
                     </div>
 
+                    <!-- Verify human -->                    
+                    <div class="flex items-center mb-4">
+                        <input id="human-verification" name="human_verification" type="checkbox" value="1" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500" required>
+                        <label for="human-verification" class="ml-2 text-sm font-medium text-gray-700">Confirmo que sou uma pessoa e não um robô</label>
+                    </div>
+                   
                     <div>
-                        <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" data-sitekey="registered-form">
                             {{ __('Cadastrar') }}
                         </button>
+                    </div>
+                    
+                    <div class="text-xs text-gray-500 mt-2">
+                        Ao se cadastrar, você concorda com nossos <a href="{{ route('terms.service') }}" class="text-blue-600 hover:underline">Termos de Uso</a> e <a href="{{ route('privacy.policy') }}" class="text-blue-600 hover:underline">Política de Privacidade</a>.
                     </div>
                 </form>
             </div>

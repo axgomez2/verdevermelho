@@ -553,7 +553,7 @@
             </a>
           </li>
 
-          <!-- Menu de Categorias de Discos com Submenu -->
+          <!-- Menu de Categorias de Discos - Agora similar ao mega menu desktop -->
           <li x-data="{ open: false }">
             <button
               type="button"
@@ -569,7 +569,9 @@
                 <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 4 4 4-4"/>
               </svg>
             </button>
-            <ul
+            
+            <!-- Grade de categorias de discos (similar ao mega menu) -->
+            <div
               id="dropdown-discos"
               x-show="open"
               x-transition:enter="transition ease-out duration-100"
@@ -578,68 +580,30 @@
               x-transition:leave="transition ease-in duration-75"
               x-transition:leave-start="transform opacity-100 scale-100"
               x-transition:leave-end="transform opacity-0 scale-95"
-              class="py-2 space-y-2"
+              class="p-3 space-y-3 bg-gray-50 rounded-lg m-2"
             >
-              @if(isset($categories) && $categories->count())
-                @foreach($categories as $category)
-                  <li x-data="{ openSub: false }">
-                    <button
-                      type="button"
-                      class="flex items-center w-full p-2 pl-11 text-sm text-gray-900 transition duration-75 rounded-lg group hover:bg-gray-100"
-                      @click="openSub = !openSub"
-                    >
-                      <span class="flex-1 ml-3 text-left whitespace-nowrap">{{ $category->nome }}</span>
-                      @if($category->subcategories && $category->subcategories->count())
-                        <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
-                          <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 4 4 4-4"/>
-                        </svg>
-                      @endif
-                    </button>
-
-                    @if($category->subcategories && $category->subcategories->count())
-                      <ul
-                        x-show="openSub"
-                        x-transition:enter="transition ease-out duration-100"
-                        x-transition:enter-start="transform opacity-0 scale-95"
-                        x-transition:enter-end="transform opacity-100 scale-100"
-                        x-transition:leave="transition ease-in duration-75"
-                        x-transition:leave-start="transform opacity-100 scale-100"
-                        x-transition:leave-end="transform opacity-0 scale-95"
-                        class="py-2 space-y-2"
-                      >
-                        <li>
-                          <a
-                            href="{{ route('vinyls.byCategory', ['slug' => $category->slug]) }}"
-                            class="flex items-center w-full p-2 pl-16 text-xs text-gray-500 transition duration-75 rounded-lg group hover:bg-gray-100"
-                          >
-                            Ver todos
-                          </a>
-                        </li>
-                        @foreach($category->subcategories as $subcategory)
-                          <li>
-                            <a
-                              href="{{ route('vinyls.bySubcategory', [
-                                'category' => $category->slug,
-                                'subcategory' => $subcategory->slug
-                              ]) }}"
-                              class="flex items-center w-full p-2 pl-16 text-xs text-gray-500 transition duration-75 rounded-lg group hover:bg-gray-100"
-                            >
-                              {{ $subcategory->name }}
-                            </a>
-                          </li>
-                        @endforeach
-                      </ul>
-                    @endif
-                  </li>
-                @endforeach
-              @else
-                <li>
-                  <span class="flex items-center p-2 pl-11 text-sm text-gray-500">
+              <!-- Link para ver todos os discos -->
+              <a href="{{ route('site.vinyls.index') }}" 
+                 class="flex items-center justify-center w-full p-2 text-sky-900 hover:text-white border border-gray-800 hover:bg-gray-900 text-sm font-medium rounded-lg">
+                VER TODOS OS DISCOS
+              </a>
+              
+              <!-- Grade de categorias -->
+              <div class="grid grid-cols-1 gap-2 mt-3">
+                @if(isset($categories) && $categories->count())
+                  @foreach($categories as $category)
+                    <a href="{{ route('vinyls.byCategory', ['slug' => $category->slug]) }}" 
+                       class="flex items-center justify-center p-2 text-gray-900 hover:text-white border border-gray-800 hover:bg-gray-900 text-sm font-medium rounded-lg">
+                      {{ $category->nome }}
+                    </a>
+                  @endforeach
+                @else
+                  <span class="text-sm text-gray-500 text-center p-2">
                     Nenhuma categoria encontrada
                   </span>
-                </li>
-              @endif
-            </ul>
+                @endif
+              </div>
+            </div>
           </li>
 
           <!-- Outros itens do menu -->

@@ -111,11 +111,96 @@
                 </div>
 
                 <div class="mx-auto mt-6 flex-1 space-y-6 lg:mt-0 lg:w-5/12">
+                    <!-- Endereço de Entrega -->                    
                     <div class="space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
-                        <p class="text-xl font-semibold text-gray-900">Resumo do Pedido</p>
+                        <div class="flex justify-between items-center">
+                            <p class="text-lg font-semibold text-gray-900">Endereço de Entrega</p>
+                            <button type="button" onclick="openAddressModal()" class="text-sm font-medium text-primary-600 hover:underline">
+                                <i class="fas fa-edit mr-1"></i> {{ is_object($address) ? 'Alterar' : 'Adicionar' }}
+                            </button>
+                        </div>
+                        
+                        @if(is_object($address))
+                            <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                <p class="font-medium text-gray-800">{{ $address->street }}, {{ $address->number }}</p>
+                                <p class="text-gray-600">{{ $address->neighborhood }} - {{ $address->city }}/{{ $address->state }}</p>
+                                <p class="text-gray-600">CEP: {{ $address->zip_code }}</p>
+                                @if($address->complement)
+                                    <p class="text-gray-600">{{ $address->complement }}</p>
+                                @endif
+                            </div>
+                        @else
+                            <div class="p-4 bg-gray-50 rounded-lg border border-gray-200 text-center">
+                                <i class="fas fa-map-marker-alt text-gray-400 text-2xl mb-2"></i>
+                                <p class="text-gray-600">Nenhum endereço selecionado</p>
+                                <button type="button" onclick="openAddressModal()" class="mt-2 text-sm font-medium text-primary-600 hover:underline">
+                                    Adicionar endereço para continuar
+                                </button>
+                            </div>
+                        @endif
+                    </div>
+                    
+                    <!-- Cálculo de Frete -->
+                    <div class="space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
+                        <p class="text-lg font-semibold text-gray-900">Opções de Frete</p>
+                        
+                        @if(is_object($address) || session('shipping_postal_code'))
+                            @php
+                                if ($address) {
+                                    if (is_object($address)) {
+                                        $postalCode = trim($address->zip_code);
+                                    } else {
+                                        $postalCode = trim($address);
+                                    }
+                                } else {
+                                    $postalCode = session('shipping_postal_code');
+                                }
+                            @endphp
+
+                            @if(isset($shippingOptions) && count($shippingOptions) > 0)
+                                <div class="space-y-3">
+                                    @foreach($shippingOptions as $option)
+                                        <div class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                                            <input 
+                                                type="radio" 
+                                                id="shipping_option_{{ $option['id'] }}" 
+                                                name="shipping_option" 
+                                                value="{{ $option['id'] }}" 
+                                                class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300"
+                                                {{ $loop->first ? 'checked' : '' }}
+                                            >
+                                            <label for="shipping_option_{{ $option['id'] }}" class="ml-3 flex flex-1 justify-between">
+                                                <div>
+                                                    <p class="font-medium text-gray-900">{{ $option['name'] }}</p>
+                                                    <p class="text-sm text-gray-500">Entrega em até {{ $option['delivery_time'] }} dias úteis</p>
+                                                </div>
+                                                <p class="font-medium text-gray-900">R$ {{ number_format($option['price'], 2, ',', '.') }}</p>
+                                            </label>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @else
+                                <div class="p-4 bg-gray-50 rounded-lg border border-gray-200 text-center">
+                                    <div class="animate-pulse">
+                                        <i class="fas fa-truck text-gray-400 text-2xl mb-2"></i>
+                                        <p class="text-gray-600">Calculando opções de frete...</p>
+                                    </div>
+                                </div>
+                            @endif
+                        @else
+                            <div class="p-4 bg-gray-50 rounded-lg border border-gray-200 text-center">
+                                <i class="fas fa-truck text-gray-400 text-2xl mb-2"></i>
+                                <p class="text-gray-600">Adicione um endereço de entrega para ver as opções de frete</p>
+                            </div>
+                        @endif
+                    </div>
+                    
+                    <!-- Resumo do Pedido -->                    
+                    <div class="space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
+                        <p class="text-lg font-semibold text-gray-900">Resumo do Pedido</p>
 
                         <div class="space-y-4">
-                            <div class="space-y-2">
+                            <div class="space-y-3">
                                 <dl class="flex items-center justify-between gap-4">
                                     <dt class="text-base font-normal text-gray-500">Subtotal</dt>
                                     <dd class="text-base font-medium text-gray-900">R$ {{ number_format($subtotal, 2, ',', '.') }}</dd>
@@ -124,77 +209,55 @@
                                 <dl class="flex items-center justify-between gap-4">
                                     <dt class="text-base font-normal text-gray-500">Frete</dt>
                                     <dd class="text-base font-medium text-gray-900">
-                                        @if($address || session('shipping_postal_code'))
-                                            @php
-                                                if ($address) {
-                                                    if (is_object($address)) {
-                                                        $postalCode = trim($address->zip_code);
-                                                    } else {
-                                                        $postalCode = trim($address);
-                                                    }
-                                                } else {
-                                                    $postalCode = session('shipping_postal_code');
-                                                }
-                                            @endphp
-
-                                            @if(isset($shippingOptions) && count($shippingOptions) > 0)
-                                                <select name="shipping_option" id="shipping_option" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                                                    @foreach($shippingOptions as $option)
-                                                        <option value="{{ $option['id'] }}">
-                                                            {{ $option['name'] }} - {{ $option['delivery_time'] }} dias - R$ {{ number_format($option['price'], 2, ',', '.') }}
-                                                        </option>
-                                                    @endforeach
-                                                </select>
-                                            @else
-                                                <p class="text-sm text-gray-500">Calculando frete...</p>
-                                            @endif
-
-                                            <p class="mt-2 text-sm text-gray-600">
-                                                Entrega para:
-                                                @if(is_object($address))
-                                                    {{ $address->street }}, {{ $address->number }} - {{ $address->city }}/{{ $address->state }}
-                                                @else
-                                                    CEP: {{ $postalCode }}
-                                                @endif
-                                            </p>
+                                        @if(isset($shippingOptions) && count($shippingOptions) > 0)
+                                            R$ <span id="shipping-price">{{ number_format($shippingOptions[0]['price'] ?? 0, 2, ',', '.') }}</span>
                                         @else
-                                            <button type="button" onclick="openAddressModal()" class="text-blue-600 hover:underline">
-                                                Adicionar endereço para calcular frete
-                                            </button>
+                                            --
                                         @endif
                                     </dd>
                                 </dl>
-
-                                <!-- Impostos removidos conforme solicitado -->
                             </div>
 
-                            <dl class="flex items-center justify-between gap-4 border-t border-gray-200 pt-2">
+                            <dl class="flex items-center justify-between gap-4 border-t border-gray-200 pt-3">
                                 <dt class="text-base font-bold text-gray-900">Total</dt>
                                 <dd class="text-base font-bold text-gray-900">R$ {{ number_format($total, 2, ',', '.') }}</dd>
                             </dl>
                         </div>
 
                         @if(isset($isLoggedIn) && $isLoggedIn)
-                            @if(is_object($address))
-                                <a href="{{ route('site.checkout.index') }}" class="flex w-full items-center justify-center rounded-lg bg-primary-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-800 focus:outline-none focus:ring-4 focus:ring-primary-300 mb-3">
-                                    <i class="fas fa-shopping-cart mr-2"></i> Finalizar Compra
-                                </a>
-                                
-                                <button 
-                                    type="button" 
-                                    id="whatsapp-checkout" 
-                                    data-whatsapp-number="5511999999999" {{-- Substitua pelo número real da loja --}}
-                                    class="flex w-full items-center justify-center rounded-lg bg-green-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-300"
-                                >
-                                    <i class="fab fa-whatsapp mr-2"></i> Finalizar compra pelo WhatsApp
-                                </button>
-                            @else
-                                <div class="bg-yellow-50 p-3 rounded-lg mb-3 border border-yellow-200">
-                                    <p class="text-yellow-700 text-sm mb-2"><i class="fas fa-exclamation-triangle mr-1"></i> É necessário adicionar um endereço para finalizar a compra</p>
+                            @if(is_object($address) && isset($shippingOptions) && count($shippingOptions) > 0)
+                                <div id="checkout-buttons-container" class="space-y-3 pt-2">
+                                    <a href="{{ route('site.checkout.index') }}" class="flex w-full items-center justify-center rounded-lg bg-primary-700 px-5 py-3 text-sm font-medium text-white hover:bg-primary-800 focus:outline-none focus:ring-4 focus:ring-primary-300">
+                                        <i class="fas fa-credit-card mr-2"></i> Finalizar Compra
+                                    </a>
+                                    
+                                    <button 
+                                        type="button" 
+                                        id="whatsapp-checkout" 
+                                        data-whatsapp-number="5511999999999" {{-- Substitua pelo número real da loja --}}
+                                        class="flex w-full items-center justify-center rounded-lg bg-green-600 px-5 py-3 text-sm font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-300"
+                                    >
+                                        <i class="fab fa-whatsapp mr-2"></i> Finalizar compra pelo WhatsApp
+                                    </button>
                                 </div>
-                                <button type="button" onclick="openAddressModal()" class="flex w-full items-center justify-center rounded-lg bg-primary-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-800 focus:outline-none focus:ring-4 focus:ring-primary-300">
-                                    <i class="fas fa-map-marker-alt mr-2"></i> Adicionar Endereço
-                                </button>
+                            @else
+                                <div id="checkout-warning" class="bg-yellow-50 p-3 rounded-lg mt-3 border border-yellow-200">
+                                    <p class="text-yellow-700 text-sm"><i class="fas fa-exclamation-triangle mr-1"></i> Complete as informações acima para finalizar sua compra</p>
+                                </div>
+                                <div id="checkout-buttons-container" class="space-y-3 pt-2 hidden">
+                                    <a href="{{ route('site.checkout.index') }}" class="flex w-full items-center justify-center rounded-lg bg-primary-700 px-5 py-3 text-sm font-medium text-white hover:bg-primary-800 focus:outline-none focus:ring-4 focus:ring-primary-300">
+                                        <i class="fas fa-credit-card mr-2"></i> Finalizar Compra
+                                    </a>
+                                    
+                                    <button 
+                                        type="button" 
+                                        id="whatsapp-checkout" 
+                                        data-whatsapp-number="5511999999999"
+                                        class="flex w-full items-center justify-center rounded-lg bg-green-600 px-5 py-3 text-sm font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-300"
+                                    >
+                                        <i class="fab fa-whatsapp mr-2"></i> Finalizar compra pelo WhatsApp
+                                    </button>
+                                </div>
                             @endif
                         @else
                             <div class="border-t border-gray-200 pt-4 pb-2 mb-2">
@@ -241,6 +304,69 @@
 
     @push('scripts')
     <script>
+        // Função para atualizar o preço total com base na opção de frete selecionada
+        function updateTotalPrice() {
+            const selectedShipping = document.querySelector('input[name="shipping_option"]:checked');
+            if (!selectedShipping) return;
+            
+            // Mostra indicador de carregamento
+            const shippingPriceDisplay = document.getElementById('shipping-price');
+            shippingPriceDisplay.innerHTML = '<span class="animate-pulse">atualizando...</span>';
+            
+            // Atualiza no servidor
+            fetch('{{ route("site.cart.updateShipping") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    shipping_option: selectedShipping.value
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Usa o valor retornado diretamente do servidor em vez de tentar extrair do HTML
+                    const shippingPrice = parseFloat(data.shipping);
+                    
+                    // Formata o preço para exibição
+                    const formattedPrice = shippingPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    
+                    // Atualiza o preço de frete exibido
+                    shippingPriceDisplay.textContent = formattedPrice;
+                    
+                    // Calcula o novo total
+                    const subtotal = {{ $subtotal }};
+                    const newTotal = subtotal + shippingPrice;
+                    
+                    // Atualiza o total exibido
+                    const totalElement = document.querySelector('dl:last-child dd');
+                    totalElement.textContent = `R$ ${newTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                    
+                    // Atualiza os botões de finalização se necessário
+                    const checkoutContainer = document.getElementById('checkout-buttons-container');
+                    if (checkoutContainer && checkoutContainer.classList.contains('hidden')) {
+                        checkoutContainer.classList.remove('hidden');
+                        
+                        // Remove a mensagem de aviso se existir
+                        const warningElement = document.querySelector('.bg-yellow-50');
+                        if (warningElement) {
+                            warningElement.remove();
+                        }
+                    }
+                } else {
+                    // Mostrar erro
+                    shippingPriceDisplay.textContent = '--';
+                    console.error('Erro ao atualizar frete:', data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Erro na requisição:', error);
+                shippingPriceDisplay.textContent = '--';
+            });
+        }
+        
         // Função para enviar pedido via WhatsApp
         function formatCartForWhatsApp() {
             // Obter informações do cliente
@@ -328,6 +454,15 @@
         }
         
         document.addEventListener('DOMContentLoaded', function() {
+            // Configurar opções de frete
+            const shippingOptions = document.querySelectorAll('input[name="shipping_option"]');
+            shippingOptions.forEach(option => {
+                option.addEventListener('change', updateTotalPrice);
+            });
+            
+            // Inicializar o preço total com a primeira opção
+            updateTotalPrice();
+            
             // Configurar botão de finalização via WhatsApp
             const whatsappButton = document.getElementById('whatsapp-checkout');
             if (whatsappButton) {
@@ -344,8 +479,73 @@
                         return;
                     }
                     
-                    // Abrir chat no WhatsApp
-                    window.open(`https://api.whatsapp.com/send?phone=${storeWhatsApp}&text=${message}`, '_blank');
+                    // Primeiro registrar o pedido no banco de dados
+                    // Coletar dados para o pedido
+                    let items = [];
+                    @foreach($cart->items as $item)
+                        items.push({
+                            id: {{ $item->product->id }},
+                            quantity: {{ $item->quantity }},
+                            price: {{ $item->product->price }}
+                        });
+                    @endforeach
+                    
+                    // Obter dados do endereço e frete
+                    @if(is_object($address))
+                    const addressId = {{ $address->id }};
+                    @else
+                    alert('É necessário cadastrar um endereço para finalizar a compra.');
+                    return;
+                    @endif
+                    
+                    // Obter informação de frete
+                    let shippingServiceName = '';
+                    let deliveryTime = 0;
+                    const selectedOption = getSelectedShippingOption();
+                    
+                    if (selectedOption) {
+                        shippingServiceName = selectedOption.text;
+                        const deliveryMatch = selectedOption.text.match(/(\d+) dias/);
+                        if (deliveryMatch) {
+                            deliveryTime = parseInt(deliveryMatch[1]);
+                        }
+                    }
+                    
+                    // Enviar pedido para registrar no sistema
+                    fetch('{{ route("site.checkout.whatsapp.register") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({
+                            items: items,
+                            shipping_address_id: addressId,
+                            shipping_cost: {{ $shipping }},
+                            shipping_service_name: shippingServiceName,
+                            shipping_delivery_time: deliveryTime,
+                            subtotal: {{ $subtotal }},
+                            total: {{ $total }}
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Após registrar com sucesso, abrir WhatsApp
+                            window.open(`https://api.whatsapp.com/send?phone=${storeWhatsApp}&text=${message}`, '_blank');
+                            
+                            // Redirecionar para a página de sucesso após um pequeno delay
+                            setTimeout(() => {
+                                window.location.href = '/pedidos/' + data.order_id;
+                            }, 2000);
+                        } else {
+                            alert('Erro ao finalizar pedido: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erro:', error);
+                        alert('Ocorreu um erro ao registrar seu pedido. Tente novamente.');
+                    });
                 });
             }
             
