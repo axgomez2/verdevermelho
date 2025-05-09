@@ -18,14 +18,7 @@ class SecurityHeaders
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
         
         // Content Security Policy - Configuração ampliada para permitir todos os recursos necessários
-        $cspHeader = "default-src 'self'; 
-            script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://code.jquery.com https://cdnjs.cloudflare.com https://www.googletagmanager.com https://unpkg.com https://www.youtube.com https://s.ytimg.com https://apis.google.com; 
-            style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com https://unpkg.com; 
-            font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; 
-            img-src 'self' data: https: blob:; 
-            media-src 'self' https:; 
-            connect-src 'self' https://*; 
-            frame-src 'self' https://www.youtube.com";
+        $cspHeader = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://code.jquery.com https://cdnjs.cloudflare.com https://www.googletagmanager.com https://unpkg.com https://www.youtube.com https://s.ytimg.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: https: blob:; media-src 'self' https:; connect-src 'self' https://*; frame-src 'self' https://www.youtube.com";
         
         // Em ambiente de desenvolvimento, desabilitar a CSP para facilitar o desenvolvimento
         if (app()->environment('local')) {
