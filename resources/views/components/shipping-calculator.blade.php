@@ -24,7 +24,8 @@
         this.error = '';
         
         try {
-            const response = await fetch(`/carrinho/shipping/options/${cleanedPostalCode}`);
+            // Usar a rota nomeada para garantir a URL correta
+            const response = await fetch(`{{ route('site.cart.getShippingOptions', '') }}/${cleanedPostalCode}`);
             const data = await response.json();
             
             if (data.success) {

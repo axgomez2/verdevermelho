@@ -234,7 +234,7 @@
                                     <button 
                                         type="button" 
                                         id="whatsapp-checkout" 
-                                        data-whatsapp-number="5511999999999" {{-- Substitua pelo número real da loja --}}
+                                        data-whatsapp-number="5511947495050" {{-- Substitua pelo número real da loja --}}
                                         class="flex w-full items-center justify-center rounded-lg bg-green-600 px-5 py-3 text-sm font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-300"
                                     >
                                         <i class="fab fa-whatsapp mr-2"></i> Finalizar compra pelo WhatsApp

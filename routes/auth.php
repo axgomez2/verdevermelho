@@ -40,7 +40,7 @@ Route::middleware('guest')->group(function () {
     Route::get('auth/{provider}/callback', [SocialiteController::class, 'handleProviderCallback']);
 
     // Rota específica para o Google
-    Route::get('auth/google/redirect', [SocialiteController::class, 'redirectToProvider'])->name('auth.google')->defaults('provider', 'google');
+    Route::get('auth/google/redirect', [SocialiteController::class, 'redirectToProvider'])->name('auth.google.redirect')->defaults('provider', 'google');
 });
 
 Route::middleware('auth')->group(function () {
