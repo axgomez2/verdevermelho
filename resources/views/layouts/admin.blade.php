@@ -13,6 +13,9 @@
 
     <title>{{ config('app.name', 'Laravel') }} - Admin</title>
 
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
@@ -148,6 +151,21 @@
                     </a>
                 </li>
 
+                <!-- PDV - Vendas no Balcão -->
+                <li>
+                    <a href="{{ route('admin.pos.index') }}"
+                       class="flex items-center p-2 text-gray-900 rounded-lg transition duration-75 group
+                              {{ request()->routeIs('admin.pos.*') ? 'bg-gray-100' : 'hover:bg-gray-100' }}">
+                        <svg class="w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900"
+                             aria-hidden="true" fill="none" stroke-linecap="round"
+                             stroke-linejoin="round" stroke-width="2"
+                             viewBox="0 0 24 24" stroke="currentColor">
+                            <path d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                        </svg>
+                        <span class="ml-3">PDV</span>
+                    </a>
+                </li>
+
                 <!-- Orders -->
                 <li>
                     <a href="#"
@@ -215,8 +233,7 @@
             @yield('content')
         </div>
     </div>
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <!-- Flowbite já está incluído e será usado para notificações -->
     @stack('scripts')
 </body>
 </html>

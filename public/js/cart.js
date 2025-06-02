@@ -51,35 +51,15 @@ document.addEventListener('DOMContentLoaded', function() {
                         cartCounter.textContent = data.cartCount;
                     }
 
-                    // Mostra mensagem de sucesso usando SweetAlert2
-                    const Toast = Swal.mixin({
-                        toast: true,
-                        position: 'top-end',
-                        showConfirmButton: false,
-                        timer: 3000,
-                        timerProgressBar: true,
-                        didOpen: (toast) => {
-                            toast.addEventListener('mouseenter', Swal.stopTimer);
-                            toast.addEventListener('mouseleave', Swal.resumeTimer);
-                        }
-                    });
-
-                    Toast.fire({
-                        icon: 'success',
-                        title: data.message || 'Produto adicionado ao carrinho'
-                    });
+                    // Mostra mensagem de sucesso usando a função showToast
+                    window.showToast(data.message || 'Produto adicionado ao carrinho', 'success');
                 } else {
                     throw new Error(data.message || 'Erro ao adicionar ao carrinho');
                 }
             })
             .catch(error => {
                 console.error('Erro:', error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Ops!',
-                    text: error.message || 'Erro ao adicionar ao carrinho',
-                    confirmButtonText: 'OK'
-                });
+                window.showToast(error.message || 'Erro ao adicionar ao carrinho', 'error');
             })
             .finally(() => {
                 // Reabilita o botão
@@ -123,35 +103,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     cartCounter.textContent = data.cartCount;
                 }
 
-                // Mostra mensagem de sucesso usando SweetAlert2
-                const Toast = Swal.mixin({
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 3000,
-                    timerProgressBar: true,
-                    didOpen: (toast) => {
-                        toast.addEventListener('mouseenter', Swal.stopTimer);
-                        toast.addEventListener('mouseleave', Swal.resumeTimer);
-                    }
-                });
-
-                Toast.fire({
-                    icon: 'success',
-                    title: data.message || 'Produto adicionado ao carrinho'
-                });
+                // Mostra mensagem de sucesso usando a função showToast
+                window.showToast(data.message || 'Produto adicionado ao carrinho', 'success');
             } else {
                 throw new Error(data.message || 'Erro ao adicionar ao carrinho');
             }
         })
         .catch(error => {
             console.error('Erro:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Ops!',
-                text: error.message || 'Erro ao adicionar ao carrinho',
-                confirmButtonText: 'OK'
-            });
+            window.showToast(error.message || 'Erro ao adicionar ao carrinho', 'error');
         });
     });
 });

@@ -4,22 +4,34 @@
             ]" />
     <div class="py-6 bg-gray-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <!-- Breadcrumb -->
-
-
-            <div class="mt-6">
-                <h1 class="text-3xl font-bold text-gray-900 mb-6">Meus Favoritos</h1>
+            <div id="wishlist-container" class="mt-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-3xl font-bold text-gray-900">Meus Favoritos</h1>
+                    
+                    @if($wishlistItems->count() > 0)
+                    <button id="add-all-to-cart" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                        Adicionar Todos ao Carrinho
+                    </button>
+                    @endif
+                </div>
+                
+                <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                    <p class="text-gray-600">Seus discos favoritos ficam salvos aqui para você encontrá-los facilmente mais tarde. 
+                    Você pode adicionar ou remover itens da sua lista de favoritos a qualquer momento.</p>
+                </div>
 
                 @if($wishlistItems->count() > 0)
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        @foreach($wishlistItems as $item)
-                            @if($item->product_type === 'App\\Models\\VinylMaster')
-                                @include('components.site.wishlist-vinyl', ['vinyl' => $item])
-                            @elseif($item->product_type === 'App\\Models\\Equipment')
-                                @include('components.site.wishlist-equipment', ['equipment' => $item])
-                            @endif
+                <div class="mt-6 sm:mt-8 md:gap-6 lg:flex lg:items-start xl:gap-8">
+      <div class="mx-auto w-full flex-none lg:max-w-2xl xl:max-w-4xl">
+        <div class="space-y-6">
+                        @foreach($wishlistItems as $vinyl)
+                            @include('components.site.wishlist-vinyl', ['vinyl' => $vinyl])
                         @endforeach
-                    </div>
+                    </div></div>
+                </div>
 
                     <div class="mt-8">
                         {{ $wishlistItems->links() }}
@@ -50,4 +62,7 @@
             </div>
         </div>
     </div>
+    @push('scripts')
+    @vite(['resources/js/wishlist-cart.js', 'resources/js/wishlist-item.js'])
+    @endpush
 </x-app-layout>

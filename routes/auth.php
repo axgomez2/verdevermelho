@@ -43,7 +43,7 @@ Route::middleware('guest')->group(function () {
     Route::get('auth/google/redirect', [SocialiteController::class, 'redirectToProvider'])->name('auth.google')->defaults('provider', 'google');
 });
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth'])->group(function () {
     Route::get('verify-email', EmailVerificationPromptController::class)
         ->name('verification.notice');
 

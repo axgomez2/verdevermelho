@@ -77,7 +77,7 @@
               <i class="fa-regular fa-heart text-xl"></i>
               @if($wishlistCount > 0)
                   <span
-                      data-wishlist-count
+                      data-wishlist-badge
                       class="absolute inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-black bg-white border-2 border-yellow-400 rounded-full -top-2 -right-2"
                   >
                       {{ $wishlistCount }}
@@ -94,12 +94,41 @@
           </button>
           @endauth
 
+          <!-- Wantlist -->
+          <!-- @auth
+          <a
+              href="{{ route('site.wantlist.index') }}"
+              class="relative inline-flex items-center p-2  text-sky-700 hover:text-sky-900 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          >
+              <i class="fa-regular fa-bell text-xl"></i>
+              @php
+                  $wantlistCount = \App\Models\Wantlist::where('user_id', auth()->id())->count();
+              @endphp
+              @if($wantlistCount > 0)
+                  <span
+                      data-wantlist-badge
+                      class="absolute inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-black bg-white border-2 border-sky-400 rounded-full -top-2 -right-2"
+                  >
+                      {{ $wantlistCount }}
+                  </span>
+              @endif
+          </a>
+          @else
+          <button
+              type="button"
+              class="relative inline-flex items-center p-2 text-sky-700 hover:text-sky-900"
+              onclick="showLoginToast()"
+          >
+              <i class="fa-regular fa-bell text-xl"></i>
+          </button>
+          @endauth -->
+
           <!-- Cart -->
           @auth
           <button
               type="button"
               data-dropdown-toggle="cart-dropdown"
-              class="relative inline-flex items-center p-2 text-gray-300 hover:text-yellow-400"
+              class="relative inline-flex items-center p-2 text-sky-700 hover:text-sky-900"
           >
               <i class="fa-solid fa-cart-shopping text-xl"></i>
               @if($cartCount > 0)
@@ -119,6 +148,82 @@
           >
               <i class="fa-solid fa-cart-shopping text-xl"></i>
           </button>
+          @endauth
+
+          <!-- Notificações -->
+          @auth
+          <div class="relative" x-data="{ notificationsOpen: false }">
+              <button
+                  type="button"
+                  @click="notificationsOpen = !notificationsOpen"
+                  @keydown.escape.window="notificationsOpen = false"
+                  @click.away="notificationsOpen = false"
+                  class="relative inline-flex items-center p-2 text-sky-700 hover:text-sky-900 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              >
+                  <i class="fa-regular fa-bell text-xl"></i>
+                  <span
+                      data-notifications-count
+                      class="absolute inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-black bg-white border-2 border-yellow-400 rounded-full -top-2 -right-2 {{ auth()->user()->unreadNotifications->count() > 0 ? '' : 'hidden' }}"
+                  >
+                      {{ auth()->user()->unreadNotifications->count() }}
+                  </span>
+              </button>
+
+              <!-- Dropdown de notificações -->
+              <div
+                  x-show="notificationsOpen"
+                  x-transition:enter="transition ease-out duration-100"
+                  x-transition:enter-start="transform opacity-0 scale-95"
+                  x-transition:enter-end="transform opacity-100 scale-100"
+                  x-transition:leave="transition ease-in duration-75"
+                  x-transition:leave-start="transform opacity-100 scale-100"
+                  x-transition:leave-end="transform opacity-0 scale-95"
+                  class="absolute right-0 z-50 w-80 mt-2 origin-top-right bg-slate-100 rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+              >
+                  <div class="px-4 py-3 border-b border-gray-100 flex justify-between items-center">
+                      <p class="text-sm font-semibold text-slate-800">Notificações</p>
+                      @if(auth()->user()->unreadNotifications->count() > 0)
+                          <a href="{{ route('site.notifications.mark-all-read') }}" class="text-xs text-sky-600 hover:text-sky-800">Marcar todas como lidas</a>
+                      @endif
+                  </div>
+
+                  <div class="py-2 max-h-60 overflow-y-auto" data-notifications-container>
+                      @forelse(auth()->user()->notifications()->take(5)->get() as $notification)
+                          <div class="px-4 py-2 border-b border-gray-100 {{ $notification->read_at ? 'bg-white' : 'bg-yellow-50' }}">
+                              <div class="flex items-center">
+                                  @if($notification->type == 'App\\Notifications\\WantlistItemAvailableNotification')
+                                      <div class="flex-shrink-0 mr-3">
+                                          <img src="{{ asset('storage/' . $notification->data['cover_image']) }}" alt="Capa do disco" class="w-10 h-10 object-cover rounded">
+                                      </div>
+                                  @endif
+                                  <div class="flex-1">
+                                      <p class="text-sm text-slate-700">{{ $notification->data['message'] }}</p>
+                                      <p class="text-xs text-slate-500 mt-1">{{ $notification->created_at->diffForHumans() }}</p>
+                                  </div>
+                                  @unless($notification->read_at)
+                                      <a href="{{ route('site.notifications.mark-as-read', $notification->id) }}" class="ml-2 text-xs text-sky-600 hover:text-sky-800">
+                                          <i class="fa-regular fa-circle-check"></i>
+                                      </a>
+                                  @endunless
+                              </div>
+                              <div class="mt-2">
+                                  <a href="{{ $notification->data['url'] }}" class="text-xs text-sky-600 hover:text-sky-800">Ver detalhes</a>
+                              </div>
+                          </div>
+                      @empty
+                          <div class="px-4 py-3 text-sm text-slate-600">
+                              <p>Você não tem notificações.</p>
+                          </div>
+                      @endforelse
+                  </div>
+
+                  @if(auth()->user()->notifications()->count() > 5)
+                      <div class="px-4 py-2 border-t border-gray-100">
+                          <a href="{{ route('site.notifications.index') }}" class="text-sm text-sky-600 hover:text-sky-800">Ver todas as notificações</a>
+                      </div>
+                  @endif
+              </div>
+          </div>
           @endauth
 
           @auth
@@ -800,7 +905,7 @@
   </script>
   <script>
     function showLoginToast() {
-      showToast("Você precisa estar logado para realizar esta ação", "warning", 3000);
+      window.showToast("Você precisa estar logado para realizar esta ação", "warning");
     }
   </script>
 

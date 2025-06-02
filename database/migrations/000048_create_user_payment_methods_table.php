@@ -9,7 +9,7 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up()
+    public function up() 
     {
         if (!Schema::hasTable('user_payment_methods')) {
             Schema::create('user_payment_methods', function (Blueprint $table) {

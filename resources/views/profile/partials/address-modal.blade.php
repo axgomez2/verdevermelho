@@ -122,15 +122,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 const newAddress = document.createElement('div');
                 newAddress.className = 'p-4 border rounded';
-                newAddress.innerHTML = `
-                    <p><strong>${data.address.type}</strong></p>
-                    <p>${data.address.street}, ${data.address.number}</p>
-                    ${data.address.complement ? `<p>${data.address.complement}</p>` : ''}
-                    <p>${data.address.neighborhood}</p>
-                    <p>${data.address.city} - ${data.address.state}</p>
-                    <p>${data.address.zip_code}</p>
-                    ${data.address.is_default ? `<p class="mt-2 text-green-600">Default Address</p>` : ''}
-                `;
+                
+                // Verificar se data.address existe antes de acessar suas propriedades
+                if (data.address) {
+                    newAddress.innerHTML = `
+                        <p><strong>${data.address.type || 'Endereço'}</strong></p>
+                        <p>${data.address.street || ''}, ${data.address.number || ''}</p>
+                        ${data.address.complement ? `<p>${data.address.complement}</p>` : ''}
+                        <p>${data.address.neighborhood || ''}</p>
+                        <p>${data.address.city || ''} - ${data.address.state || ''}</p>
+                        <p>${data.address.zip_code || ''}</p>
+                        ${data.address.is_default ? `<p class="mt-2 text-green-600">Endereço Principal</p>` : ''}
+                    `;
+                } else if (data.message) {
+                    // Se tivermos apenas uma mensagem de sucesso, mas sem objeto de endereço
+                    newAddress.innerHTML = `<p>Endereço adicionado com sucesso!</p>`;
+                } else {
+                    newAddress.innerHTML = `<p>Novo endereço adicionado.</p>`;
+                }
 
                 document.querySelector('.address-list').appendChild(newAddress);
 

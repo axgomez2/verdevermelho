@@ -31,6 +31,7 @@ Route::middleware('auth')->group(function () {
 Route::get('/discos/promocoes', [VinylWebController::class, 'promotions'])->name('site.vinyls.promotions');
 
 require __DIR__.'/admin.php';
+require __DIR__.'/notifications.php';
 
 Route::middleware(['auth', 'verified', 'rolemanager:resale'])->group(function () {
     Route::prefix('pdv')->group(function () {
@@ -91,5 +92,6 @@ Route::get('/terms-of-service', function () {
 
 require __DIR__.'/auth.php';
 require __DIR__.'/users.php';
-require __DIR__.'/checkout.php';
 require __DIR__.'/cart.php';
+require __DIR__.'/checkout.php';
+

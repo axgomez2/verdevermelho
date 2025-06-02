@@ -188,25 +188,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 @if(session('success'))
 <script>
-Toastify({
-    text: "{{ session('success') }}",
-    duration: 3000,
-    gravity: "top",
-    position: "right",
-    backgroundColor: "linear-gradient(to right, #00b09b, #96c93d)"
-}).showToast();
+window.showToast("{{ session('success') }}", "success");
 </script>
 @endif
 
 @if(session('error'))
 <script>
-Toastify({
-    text: "{{ session('error') }}",
-    duration: 3000,
-    gravity: "top",
-    position: "right",
-    backgroundColor: "linear-gradient(to right, #FF5F6D, #FFC371)"
-}).showToast();
+window.showToast("{{ session('error') }}", "error");
 </script>
 @endif
 @endpush

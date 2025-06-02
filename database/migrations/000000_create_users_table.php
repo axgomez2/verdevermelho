@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->string('phone', 20)->nullable()->unique();
             $table->string('cpf', 14)->nullable()->unique();
+            $table->string('google_id')->nullable()->unique();
 
             $table->tinyInteger('role')->default(20);//20user - 40 revendedor 66 - admin
             $table->timestamp('email_verified_at')->nullable();

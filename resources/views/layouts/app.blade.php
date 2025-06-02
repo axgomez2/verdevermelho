@@ -30,9 +30,7 @@
 
 
     <!-- Stylesheets -->
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 
     <!-- Vite -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -110,13 +108,10 @@
     @include('components.site.register-modal')
 
     <!-- JavaScript -->
-    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="{{ asset('js/wishlist.js') }}"></script>
+
     <script src="{{ asset('assets/js/audio-player.js') }}" defer></script>
     <script src="{{ asset('assets/js/cart.js') }}"></script>
-    <script src="{{ asset('assets/js/toast.js') }}" type="module"></script>
-    <script src="{{ asset('js/wishlist.js') }}"></script>
+    <!-- Removido o script toast.js, agora implementado via app.js -->
     <script src="https://unpkg.com/flowbite@1.6.6/dist/flowbite.js"></script>
 
     <script>
@@ -220,27 +215,7 @@
             }, 5000);
         });
 
-        // Função para exibir notificações toast
-        window.showToast = function(message, type = 'success') {
-            Toastify({
-                text: message,
-                duration: 3000,
-                close: true,
-                gravity: "top",
-                position: "right",
-                stopOnFocus: true,
-                className: type === 'error' ? 'bg-red-600' : 'bg-green-600',
-                style: {
-                    background: type === 'error' ? '#dc2626' : '#16a34a',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-                    padding: '12px 20px',
-                    fontSize: '14px',
-                    fontWeight: '500'
-                },
-                onClick: function(){}
-            }).showToast();
-        };
+        // A função showToast agora é carregada a partir do app.js
 
         // Exibir mensagens flash como toasts
         @if (session('success'))

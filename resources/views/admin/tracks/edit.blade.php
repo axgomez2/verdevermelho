@@ -124,13 +124,7 @@ document.addEventListener('alpine:init', () => {
                 this.showModal = true;
             } catch (error) {
                 console.error('Erro ao pesquisar no YouTube:', error);
-                Toastify({
-                    text: "Erro ao pesquisar no YouTube. Tente novamente.",
-                    duration: 3000,
-                    gravity: "top",
-                    position: "right",
-                    backgroundColor: "linear-gradient(to right, #FF5F6D, #FFC371)"
-                }).showToast();
+                window.showToast("Erro ao pesquisar no YouTube. Tente novamente.", "error");
             } finally {
                 this.isLoading = false;
             }
@@ -152,28 +146,16 @@ document.addEventListener('alpine:init', () => {
 });
 </script>
 
-<!-- Toastify Flash Messages -->
+<!-- Flash Messages usando o toast do Flowbite -->
 @if(session('success'))
 <script>
-    Toastify({
-        text: "{{ session('success') }}",
-        duration: 3000,
-        gravity: "top",
-        position: "right",
-        backgroundColor: "linear-gradient(to right, #00b09b, #96c93d)"
-    }).showToast();
+    window.showToast("{{ session('success') }}", "success");
 </script>
 @endif
 
 @if(session('error'))
 <script>
-    Toastify({
-        text: "{{ session('error') }}",
-        duration: 3000,
-        gravity: "top",
-        position: "right",
-        backgroundColor: "linear-gradient(to right, #FF5F6D, #FFC371)"
-    }).showToast();
+    window.showToast("{{ session('error') }}", "error");
 </script>
 @endif
 @endpush

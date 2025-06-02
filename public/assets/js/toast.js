@@ -1,59 +1,26 @@
-window.showToast = (message, type = "info") => {
-    let backgroundColor, textColor, icon
-    switch (type) {
-      case "success":
-        backgroundColor = "#4CAF50"
-        textColor = "#FFFFFF"
-        icon = '<i class="fas fa-check-circle mr-2"></i>'
-        break
-      case "error":
-        backgroundColor = "#F44336"
-        textColor = "#FFFFFF"
-        icon = '<i class="fas fa-exclamation-circle mr-2"></i>'
-        break
-      default:
-        backgroundColor = "#2196F3"
-        textColor = "#FFFFFF"
-        icon = '<i class="fas fa-info-circle mr-2"></i>'
-    }
+/**
+ * Arquivo toast.js - Wrapper de compatibilidade
+ * 
+ * ATENÇÃO: Este arquivo foi mantido apenas para compatibilidade.
+ * A implementação real da função showToast agora está em resources/js/app.js
+ * e é carregada via Vite. Em uma futura atualização, este arquivo será removido.
+ * 
+ * Todos os novos desenvolvimentos devem usar diretamente window.showToast,
+ * que é fornecido pelo app.js.
+ */
 
-    Toastify({
-      text: icon + message,
-      duration: 3000,
-      close: true,
-      gravity: "top",
-      position: "right",
-      stopOnFocus: true,
-      escapeMarkup: false,
-      className: "custom-toast",
-      style: {
-        background: backgroundColor,
-        color: textColor,
-      },
-      offset: {
-        x: 20,
-        y: 20,
-      },
-      onClick: () => {}, // Callback after click
-    }).showToast()
-  }
+// Este arquivo não faz nada, pois a função showToast já está definida no app.js
+// Esta é apenas uma camada de compatibilidade para scripts antigos que ainda importam este arquivo.
 
-  const style = document.createElement("style")
-  style.textContent = `
-      .custom-toast {
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-          border-radius: 4px;
-          padding: 12px 20px;
-          font-size: 14px;
-          font-weight: 500;
-          animation: slideInRight 0.3s ease-in-out, fadeOut 0.3s ease-in-out 2.7s;
-      }
-      .custom-toast .toast-close {
-          opacity: 0.7;
-          font-size: 16px;
-          padding-left: 10px;
-      }
-      .custom-toast .toast-close:hover {
+// Se por algum motivo a função showToast não estiver disponível, definimos uma versão básica
+if (typeof window.showToast !== 'function') {
+    console.warn('A função showToast não foi encontrada no escopo global. Usando fallback básico.');
+    
+    window.showToast = function(message, type = 'info') {
+        console.log(`Toast (${type}): ${message}`);
+        alert(message);
+    };
+}
           opacity: 1;
       }
       @keyframes slideInRight {
