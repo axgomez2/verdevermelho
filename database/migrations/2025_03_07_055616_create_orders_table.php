@@ -9,7 +9,7 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
+    public function up(): void 
     {
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
@@ -25,6 +25,11 @@ return new class extends Migration
             $table->foreignId('shipping_address_id')->constrained('addresses');
             $table->foreignId('billing_address_id')->constrained('addresses');
             $table->text('notes')->nullable();
+            $table->string('mp_preference_id')->nullable()->after('transaction_code');
+$table->string('mp_payment_id')->nullable()->after('mp_preference_id');
+$table->string('mp_payment_type')->nullable()->after('mp_payment_id');
+$table->integer('mp_installments')->nullable()->after('mp_payment_type');
+$table->string('mp_status_detail')->nullable()->after('mp_installments');
             $table->timestamps();
             $table->softDeletes();
         });

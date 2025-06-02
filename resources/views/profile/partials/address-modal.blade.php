@@ -215,6 +215,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const newAddress = document.createElement('div');
                 newAddress.className = 'p-4 border rounded';
                 
+                // Verificar o objeto de endereço retornado
                 if (address) {
                     // Usar dados do endereço retornado pela API
                     newAddress.innerHTML = `
@@ -226,6 +227,20 @@ document.addEventListener('DOMContentLoaded', function() {
                         <p>${address.zip_code || ''}</p>
                         ${address.is_default ? `<p class="mt-2 text-green-600">Endereço Principal</p>` : ''}
                     `;
+                } else if (data && data.address) {
+                    // Verificar data.address (formato alternativo)
+                    newAddress.innerHTML = `
+                        <p><strong>${data.address.type || 'Endereço'}</strong></p>
+                        <p>${data.address.street || ''}, ${data.address.number || ''}</p>
+                        ${data.address.complement ? `<p>${data.address.complement}</p>` : ''}
+                        <p>${data.address.neighborhood || ''}</p>
+                        <p>${data.address.city || ''} - ${data.address.state || ''}</p>
+                        <p>${data.address.zip_code || ''}</p>
+                        ${data.address.is_default ? `<p class="mt-2 text-green-600">Endereço Principal</p>` : ''}
+                    `;
+                } else if (data && data.message) {
+                    // Se tivermos apenas uma mensagem de sucesso, mas sem objeto de endereço
+                    newAddress.innerHTML = `<p>Endereço adicionado com sucesso!</p>`;
                 } else {
                     // Se não tiver endereço na resposta, usar os dados do formulário
                     const formType = document.getElementById('type').value || 'Endereço';

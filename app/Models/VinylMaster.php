@@ -10,6 +10,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use App\Traits\HasWishlist;
 use App\Models\Cart;
+use App\Models\Wantlist;
 
 class VinylMaster extends Model
 {
@@ -107,6 +108,8 @@ class VinylMaster extends Model
         $this->cover_image = $name;
         $this->save();
     }
+    
+    // O método inWantlist já está implementado abaixo
 
     public function inWishlist(): bool
     {

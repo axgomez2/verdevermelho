@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Usuário não está logado - exibe toast com botão de login
                     window.showToast(
                         'Você precisa estar logado para adicionar itens aos favoritos.', 
-                        'error', 
+                        'warning', 
                         {
                             actionButton: {
                                 text: 'Fazer Login',
@@ -128,7 +128,9 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('Erro ao processar wishlist:', error);
-                window.showToast('Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente mais tarde.', 'error');
+                if (error.message !== 'Unauthorized') {
+                    window.showToast('Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente mais tarde.', 'error');
+                }
             })
             .finally(() => {
                 // Reabilita o botão

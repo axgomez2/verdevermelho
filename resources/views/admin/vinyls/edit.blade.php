@@ -110,6 +110,86 @@
             @csrf
             @method('PUT')
 
+            <!-- Informações Básicas -->
+            <div class="mb-6">
+                <h2 class="text-xl font-semibold mb-4 text-gray-900">Informações Básicas</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Título do Disco -->
+                    <div>
+                        <label for="title" class="block mb-2 text-sm font-medium text-gray-900">Título do Disco</label>
+                        <input type="text" id="title" name="title" value="{{ old('title', $vinyl->title) }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5" required>
+                    </div>
+
+                    <!-- Nome do Artista -->
+                    <div>
+                        <label for="artist_name" class="block mb-2 text-sm font-medium text-gray-900">Nome do Artista</label>
+                        <input type="text" id="artist_name" name="artist_name" value="{{ old('artist_name', $vinyl->artists->first()->name ?? '') }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5" required>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Faixas do Disco -->
+            <div class="mb-6" x-data="{ tracks: {{ json_encode($vinyl->tracks) }}, deletedTracks: [] }">
+                <h2 class="text-xl font-semibold mb-4 text-gray-900">Faixas do Disco</h2>
+                
+                <div class="mb-4 overflow-x-auto">
+                    <table class="w-full text-sm text-left text-gray-500">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-4 py-3 w-16">#</th>
+                                <th scope="col" class="px-4 py-3">Nome da Faixa</th>
+                                <th scope="col" class="px-4 py-3 w-32">Duração</th>
+                                <th scope="col" class="px-4 py-3">URL YouTube</th>
+                                <th scope="col" class="px-4 py-3 w-24">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="(track, index) in tracks" :key="index">
+                                <tr class="border-b" :class="{ 'bg-red-50': track._deleted }">
+                                    <td class="px-4 py-3">
+                                        <template x-if="track.id">
+                                            <input type="hidden" :name="`tracks[${index}][id]`" :value="track.id" x-bind:disabled="track._deleted ? true : false">
+                                        </template>
+                                        <span x-text="index + 1" class="font-medium"></span>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <input type="text" :name="`tracks[${index}][name]`" x-model="track.name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5" required x-bind:disabled="track._deleted ? true : false">
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <input type="text" :name="`tracks[${index}][duration]`" x-model="track.duration" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5" placeholder="3:45" x-bind:disabled="track._deleted ? true : false">
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <input type="text" :name="`tracks[${index}][youtube_url]`" x-model="track.youtube_url" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5" placeholder="https://youtube.com/..." x-bind:disabled="track._deleted ? true : false">
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <button type="button" @click="if(track.id) { deletedTracks.push(track.id); track._deleted = true; } else { tracks.splice(index, 1); }" x-show="!track._deleted" class="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-3 py-1.5">
+                                            <span class="hidden md:inline">Excluir</span>
+                                            <span class="inline md:hidden">X</span>
+                                        </button>
+                                        <button type="button" @click="track._deleted = false; deletedTracks = deletedTracks.filter(id => id !== track.id)" x-show="track._deleted" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-3 py-1.5">
+                                            <span class="hidden md:inline">Restaurar</span>
+                                            <span class="inline md:hidden">&#10003;</span>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
+                            <tr>
+                                <td colspan="5" class="px-4 py-3">
+                                    <button type="button" @click="tracks.push({id: null, name: '', duration: '', youtube_url: ''})" class="text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 w-full">
+                                        Adicionar Nova Faixa
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Campo oculto para tracks marcados para exclusão -->
+                <template x-for="trackId in deletedTracks" :key="trackId">
+                    <input type="hidden" :name="`tracks_to_delete[]`" :value="trackId">
+                </template>
+            </div>
+            
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- Description -->
                 <div>

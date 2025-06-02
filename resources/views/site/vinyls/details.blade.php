@@ -278,8 +278,21 @@
                                 </div>
                             </div>
                             
-                            <div class="w-full text-center text-red-600 font-medium py-2" x-show="!isInStock">
-                                Produto fora de estoque. Adicione aos favoritos para ser notificado quando disponível.
+                            <div class="w-full py-2" x-show="!isInStock">
+                                <button 
+                                    id="add-to-wantlist-button"
+                                    type="button"
+                                    class="w-full text-sky-700 bg-white border border-sky-300 focus:outline-none hover:bg-sky-50 focus:ring-4 focus:ring-sky-200 font-medium rounded-lg text-sm px-5 py-2.5 {{ auth()->check() && $vinyl->inWantlist() ? 'bg-sky-50' : '' }}"
+                                    data-product-id="{{ $vinyl->id }}"
+                                    data-product-type="{{ get_class($vinyl) }}"
+                                    data-in-wantlist="{{ json_encode(auth()->check() && $vinyl->inWantlist()) }}"
+                                    {{ !auth()->check() ? 'onclick="showLoginToast()"' : '' }}
+                                >
+                                    <i class="fas fa-bell mr-2"></i>
+                                    <span class="wantlist-text">
+                                        {{ auth()->check() && $vinyl->inWantlist() ? 'Você será notificado quando disponível' : 'Notifique-me quando disponível' }}
+                                    </span>
+                                </button>
                             </div>
                             
                             <button type="button"
@@ -501,6 +514,75 @@
     @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Adicionar handler para o botão de wantlist
+            const wantlistButton = document.getElementById('add-to-wantlist-button');
+            if (wantlistButton) {
+                wantlistButton.addEventListener('click', function() {
+                    const productId = this.dataset.productId;
+                    const productType = this.dataset.productType;
+                    const isInWantlist = this.dataset.inWantlist === 'true';
+                    
+                    // Se o usuário não estiver logado, o atributo onclick já lidará com isso
+                    if (!this.getAttribute('onclick')) {
+                        toggleWantlistItem(productId, productType, isInWantlist, this);
+                    }
+                });
+            }
+            
+            // Função para alternar item na wantlist
+            function toggleWantlistItem(productId, productType, isInWantlist, button) {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                
+                fetch('/wantlist/toggle', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        product_id: productId,
+                        product_type: productType
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Atualizar o atributo data-in-wantlist
+                        button.dataset.inWantlist = data.in_wantlist.toString();
+                        
+                        // Atualizar classes de estilo
+                        if (data.in_wantlist) {
+                            button.classList.add('bg-sky-50');
+                        } else {
+                            button.classList.remove('bg-sky-50');
+                        }
+                        
+                        // Atualizar o texto
+                        const textSpan = button.querySelector('.wantlist-text');
+                        if (textSpan) {
+                            textSpan.textContent = data.in_wantlist 
+                                ? 'Você será notificado quando disponível' 
+                                : 'Notifique-me quando disponível';
+                        }
+                        
+                        // Mostrar mensagem
+                        alert(data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao alternar item na wantlist:', error);
+                    alert('Erro ao processar sua solicitação. Tente novamente.');
+                });
+            }
+            
+            // Função para mostrar mensagem de login necessário
+            window.showLoginToast = function() {
+                alert('É necessário estar logado para adicionar à lista de notificações.');
+                setTimeout(() => {
+                    window.location.href = '{{ route("login") }}';
+                }, 1000);
+            };
             // Encontrar todos os botões de play
             const playButtons = document.querySelectorAll('.play-track-btn');
             

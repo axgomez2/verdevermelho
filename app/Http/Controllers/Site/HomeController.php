@@ -18,17 +18,11 @@ class HomeController extends Controller
     public function index()
     {
         $latestVinyls = VinylMaster::with(['artists', 'vinylSec', 'catStyleShops'])
-            ->whereHas('vinylSec', function ($query) {
-                $query->where('in_stock', true);
-            })
             ->latest()
             ->take(value: 20)
             ->get();
 
         $slideVinyls = VinylMaster::with(['artists', 'vinylSec', 'catStyleShops'])
-        ->whereHas('vinylSec', function ($query) {
-            $query->where('in_stock', true);
-        })
         ->latest()
         ->take(value: 10)
         ->get();
@@ -40,12 +34,11 @@ class HomeController extends Controller
             ->take(3)
             ->get();
             
-        // Buscar categorias que tenham discos disponíveis em estoque
+        // Buscar categorias que tenham discos (independente de disponibilidade)
         $categoriesWithVinyls = CatStyleShop::select('cat_style_shop.id', 'cat_style_shop.nome', 'cat_style_shop.slug')
             ->join('cat_style_shop_vinyl_master', 'cat_style_shop.id', '=', 'cat_style_shop_vinyl_master.cat_style_shop_id')
             ->join('vinyl_masters', 'cat_style_shop_vinyl_master.vinyl_master_id', '=', 'vinyl_masters.id')
             ->join('vinyl_secs', 'vinyl_masters.id', '=', 'vinyl_secs.vinyl_master_id')
-            ->where('vinyl_secs.in_stock', true)
             ->groupBy('cat_style_shop.id', 'cat_style_shop.nome', 'cat_style_shop.slug')
             ->having(DB::raw('COUNT(DISTINCT vinyl_masters.id)'), '>=', 2) // Reduzido de 5 para 2
             ->orderBy('cat_style_shop.nome')

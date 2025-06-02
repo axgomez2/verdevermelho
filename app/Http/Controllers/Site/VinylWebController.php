@@ -84,6 +84,13 @@ class VinylWebController extends Controller
 
     private function applyFilters($query, $request)
     {
+        // Filtro de disponibilidade (opcional)
+        if ($request->filled('available') && $request->available == 1) {
+            $query->whereHas('vinylSec', function ($q) {
+                $q->where('in_stock', 1)->where('quantity', '>', 0);
+            });
+        }
+
         // Filtro de estilo (style)
         if ($request->filled('style')) {
             $query->whereHas('styles', function ($q) use ($request) {
@@ -152,8 +159,15 @@ class VinylWebController extends Controller
         $q->where('slug', $slug);
     })->with(['vinylSec', 'artists', 'recordLabel', 'catStyleShops']);
 
-    // Aplicar ordenação
-    switch ($request->get('sort')) {
+        // Filtro de disponibilidade (opcional, controlado pelo frontend)
+        if ($request->filled('available') && $request->available == 1) {
+            $query->whereHas('vinylSec', function ($q) {
+                $q->where('in_stock', 1)->where('quantity', '>', 0);
+            });
+        }
+
+        // Aplicar ordenação
+        switch ($request->get('sort')) {
         case 'price_asc':
             $query->join('vinyl_secs', 'vinyl_masters.id', '=', 'vinyl_secs.vinyl_master_id')
                   ->orderBy('vinyl_secs.price', 'asc')

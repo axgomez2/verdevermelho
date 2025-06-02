@@ -22,22 +22,39 @@ class WishlistController extends Controller
     public function index()
     {
         $user = Auth::user();
+        $perPage = 12; // Número de itens por página
         
-        // Busca itens da wishlist com seus produtos
-        $wishlistItems = $user->wishlist()
-            ->with(['product'])
-            ->get()
-            ->map(function ($item) {
-                return $item->product;
-            });
+        // Busca itens da wishlist diretamente com seus produtos
+        $wishlistRecords = Wishlist::where('user_id', $user->id)
+            ->with(['product.artists', 'product.tracks', 'product.vinylSec', 'product.recordLabel'])
+            ->get();
+        
+        // Extrai os produtos (VinylMaster) dos registros da wishlist
+        $products = collect();
+        foreach ($wishlistRecords as $record) {
+            if ($record->product && $record->product_type === 'App\\Models\\VinylMaster') {
+                $products->push($record->product);
+            }
+        }
+            
+        // Converte a coleção para paginação usando a classe LengthAwarePaginator
+        $currentPage = request()->get('page', 1);
+        $pagedData = $products->slice(($currentPage - 1) * $perPage, $perPage)->all();
+        $wishlistItems = new \Illuminate\Pagination\LengthAwarePaginator(
+            $pagedData,
+            $products->count(),
+            $perPage,
+            $currentPage,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
 
         // Busca itens da wantlist com seus produtos
         $wantlistItems = $user->wantlist()
-            ->with(['product'])
+            ->with(['product.artists', 'product.tracks', 'product.vinylSec', 'product.recordLabel'])
             ->get()
             ->map(function ($item) {
                 return $item->product;
-            });
+            })->filter()->values();
 
         return view('site.wishlist.index', compact('wishlistItems', 'wantlistItems'));
     }

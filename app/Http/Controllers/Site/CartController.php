@@ -25,8 +25,34 @@ class CartController extends Controller
     {
         $cart = $this->getOrCreateCart();
         $cart->load('items.product.productable.vinylSec');
-
-        $subtotal = $cart->items->sum(function ($item) {
+        
+        // Verificar disponibilidade e estoque dos itens
+        $availableItems = collect();
+        $unavailableItems = collect();
+        
+        foreach ($cart->items as $item) {
+            // Verifica se o produto existe, está em estoque (in_stock=1) e tem quantidade disponível
+            if ($item->product && 
+                $item->product->productable && 
+                $item->product->productable->vinylSec && 
+                $item->product->productable->vinylSec->in_stock == 1 && 
+                $item->product->productable->vinylSec->quantity > 0) {
+                
+                // Ajusta a quantidade se for maior que o estoque disponível
+                if ($item->quantity > $item->product->productable->vinylSec->quantity) {
+                    $item->quantity = $item->product->productable->vinylSec->quantity;
+                    $item->save();
+                }
+                
+                $availableItems->push($item);
+            } else {
+                // Item indisponível (sem estoque, quantidade zero ou in_stock=0)
+                $unavailableItems->push($item);
+            }
+        }
+        
+        // Calcular subtotal apenas com itens disponíveis
+        $subtotal = $availableItems->sum(function ($item) {
             return $item->quantity * $item->product->price;
         });
 
@@ -63,7 +89,8 @@ class CartController extends Controller
             }
         }
 
-        // Removido cálculo de imposto conforme solicitado
+        // Imposto removido conforme solicitado
+        $tax = 0;
         $total = $subtotal + $shipping;
 
         // Armazenar o CEP do usuário na sessão se ele estiver logado e tiver um endereço
@@ -71,7 +98,19 @@ class CartController extends Controller
             session(['shipping_postal_code' => preg_replace('/[^0-9]/', '', $address->zip_code)]);
         }
 
-        return view('site.cart.index', compact('cart', 'subtotal', 'shipping', 'total', 'shippingOptions', 'address', 'isLoggedIn', 'postalCode'));
+        return view('site.cart.index', compact(
+            'cart', 
+            'subtotal', 
+            'shipping', 
+            'tax', // Mantemos a variável para compatibilidade com a view, mas com valor zero
+            'total', 
+            'shippingOptions', 
+            'address', 
+            'isLoggedIn', 
+            'postalCode',
+            'availableItems',
+            'unavailableItems'
+        ));
     }
 
     public function addToCart(Request $request)
@@ -172,6 +211,101 @@ class CartController extends Controller
             return response()->json(['error' => 'Erro ao calcular opções de frete. Tente novamente.', 'success' => false], 500);
         }
     }
+    
+    public function updateQuantity(CartItem $cartItem, Request $request)
+    {
+        $request->validate([
+            'quantity' => 'required|integer|min:1'
+        ]);
+
+        // Verificar disponibilidade e estoque
+        $product = $cartItem->product;
+        
+        if (!$product || !$product->productable || !$product->productable->vinylSec) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Produto indisponível'
+                ], 400);
+            }
+            
+            return redirect()->route('site.cart.index')
+                ->with('error', 'Produto indisponível');
+        }
+        
+        $vinylSec = $product->productable->vinylSec;
+        $isInStock = $vinylSec->in_stock == 1;
+        $availableStock = $vinylSec->quantity;
+        
+        if (!$isInStock || $availableStock <= 0) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Produto sem estoque'
+                ], 400);
+            }
+            
+            return redirect()->route('site.cart.index')
+                ->with('error', 'Produto sem estoque');
+        }
+        
+        // Limitar a quantidade ao estoque disponível
+        $quantity = min($request->quantity, $availableStock);
+        $cartItem->update(['quantity' => $quantity]);
+        
+        // Recalcular totais para resposta AJAX
+        $cart = $this->getOrCreateCart();
+        $cart->load('items.product.productable.vinylSec');
+        
+        // Filtrar apenas itens disponíveis para cálculo
+        $availableItems = $cart->items->filter(function($item) {
+            return $item->product && 
+                   $item->product->productable && 
+                   $item->product->productable->vinylSec && 
+                   $item->product->productable->vinylSec->in_stock == 1 && 
+                   $item->product->productable->vinylSec->quantity > 0;
+        });
+        
+        $subtotal = $availableItems->sum(function ($item) {
+            return $item->quantity * $item->product->price;
+        });
+        
+        // Recuperar frete selecionado
+        $shipping = session('selected_shipping_price', 0);
+        
+        // Imposto removido conforme solicitado
+        $tax = 0;
+        
+        // Cálculo do total
+        $total = $subtotal + $shipping;
+        
+        // Formatar valores para exibição
+        $formattedItemTotal = number_format($product->price * $quantity, 2, ',', '.');
+        $formattedSubtotal = number_format($subtotal, 2, ',', '.');
+        $formattedShipping = number_format($shipping, 2, ',', '.');
+        $formattedTotal = number_format($total, 2, ',', '.');
+        
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true, 
+                'message' => 'Quantidade atualizada com sucesso',
+                'quantity' => $quantity,
+                'itemTotal' => $product->price * $quantity,
+                'formattedItemTotal' => $formattedItemTotal,
+                'subtotal' => $subtotal,
+                'formattedSubtotal' => $formattedSubtotal,
+                'shipping' => $shipping,
+                'formattedShipping' => $formattedShipping,
+                'total' => $total,
+                'formattedTotal' => $formattedTotal,
+                'availableStock' => $availableStock
+            ]);
+        }
+        
+        return redirect()->route('site.cart.index')
+            ->with('success', 'Quantidade atualizada com sucesso');
+
+    }
 
     public function updateShipping(Request $request)
     {
@@ -180,8 +314,27 @@ class CartController extends Controller
         ]);
 
         $cart = $this->getOrCreateCart();
-        if ($cart->items->isEmpty()) {
-            return response()->json(['error' => 'Carrinho vazio'], 400);
+        $cart->load('items.product.productable.vinylSec');
+        
+        // Filtrar apenas itens disponíveis
+        $availableItems = $cart->items->filter(function($item) {
+            return $item->product && 
+                   $item->product->productable && 
+                   $item->product->productable->vinylSec && 
+                   $item->product->productable->vinylSec->in_stock == 1 && 
+                   $item->product->productable->vinylSec->quantity > 0;
+        });
+        
+        $unavailableItems = $cart->items->filter(function($item) {
+            return !$item->product || 
+                   !$item->product->productable || 
+                   !$item->product->productable->vinylSec || 
+                   $item->product->productable->vinylSec->in_stock == 0 || 
+                   $item->product->productable->vinylSec->quantity <= 0;
+        });
+        
+        if ($availableItems->isEmpty()) {
+            return response()->json(['error' => 'Não há itens disponíveis no carrinho'], 400);
         }
 
         $shippingOption = $request->shipping_option;

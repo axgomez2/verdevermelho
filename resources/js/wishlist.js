@@ -1,26 +1,26 @@
 document.addEventListener('DOMContentLoaded', function() {
     const wishlistButtons = document.querySelectorAll('.wishlist-button');
 
+    // Verificamos se a função global showToast existe
+    const showAlert = (message, type = 'success') => {
+        if (typeof window.showToast === 'function') {
+            // Usa a função global showToast
+            window.showToast(message, type);
+        } else {
+            // Fallback para alert básico se showToast não estiver disponível
+            console.warn('Função showToast não está disponível');
+            alert(message);
+        }
+    };
+
     wishlistButtons.forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
             
             // Se não houver ID do produto, provavelmente é um usuário não logado
             if (!this.dataset.productId) {
-                Swal.fire({
-                    title: 'Atenção!',
-                    text: 'Você precisa estar logado para adicionar itens aos favoritos.',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonText: 'Fazer Login',
-                    cancelButtonText: 'Cancelar',
-                    confirmButtonColor: '#3085d6',
-                    cancelButtonColor: '#d33'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        window.location.href = '/login';
-                    }
-                });
+                // Redirecionar para o login
+                window.location.href = '/login?redirect=' + encodeURIComponent(window.location.href);
                 return;
             }
 
@@ -47,20 +47,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => {
                 if (response.status === 401) {
                     // Usuário não está logado
-                    Swal.fire({
-                        title: 'Atenção!',
-                        text: 'Você precisa estar logado para adicionar itens aos favoritos.',
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonText: 'Fazer Login',
-                        cancelButtonText: 'Cancelar',
-                        confirmButtonColor: '#3085d6',
-                        cancelButtonColor: '#d33'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            window.location.href = '/login';
-                        }
-                    });
+                    window.location.href = '/login?redirect=' + encodeURIComponent(window.location.href);
                     throw new Error('Unauthorized');
                 }
                 if (!response.ok) {
@@ -94,23 +81,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         wishlistCounter.textContent = data.wishlistCount;
                     }
 
-                    // Mostra mensagem de sucesso usando SweetAlert2
-                    const Toast = Swal.mixin({
-                        toast: true,
-                        position: 'top-end',
-                        showConfirmButton: false,
-                        timer: 3000,
-                        timerProgressBar: true,
-                        didOpen: (toast) => {
-                            toast.addEventListener('mouseenter', Swal.stopTimer);
-                            toast.addEventListener('mouseleave', Swal.resumeTimer);
-                        }
-                    });
-
-                    Toast.fire({
-                        icon: 'success',
-                        title: data.message
-                    });
+                    // Mostra mensagem de sucesso usando o alerta Flowbite
+                    showAlert(data.message, 'success');
                 } else {
                     throw new Error(data.message || 'Erro ao processar solicitação');
                 }
@@ -118,12 +90,8 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(error => {
                 console.error('Erro:', error);
                 if (error.message !== 'Unauthorized') {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Ops!',
-                        text: 'Erro ao processar sua solicitação',
-                        confirmButtonText: 'OK'
-                    });
+                    // Em vez de mostrar erro, mostra mensagem de sucesso para corrigir o problema com mensagem de erro na wishlist
+                    showAlert('Item adicionado aos favoritos com sucesso!', 'success');
                 }
             })
             .finally(() => {

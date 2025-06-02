@@ -11,8 +11,8 @@
                 onerror="this.src='{{ asset('assets/images/placeholder.jpg') }}'"
             />
             <div class="absolute top-2 left-2 flex flex-col gap-2">
-                <span class="{{ $vinyl->vinylSec->quantity > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }} text-xs font-medium px-2.5 py-0.5 rounded-full">
-                    {{ $vinyl->vinylSec->quantity > 0 ? 'Disponível' : 'Indisponível' }}
+                <span class="{{ ($vinyl->vinylSec->quantity > 0 && $vinyl->vinylSec->in_stock == 1) ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }} text-xs font-medium px-2.5 py-0.5 rounded-full">
+                    {{ ($vinyl->vinylSec->quantity > 0 && $vinyl->vinylSec->in_stock == 1) ? 'Disponível' : 'Indisponível' }}
                 </span>
                 @if($vinyl->vinylSec->is_promotional && $vinyl->vinylSec->promotional_price && $vinyl->vinylSec->promotional_price > 0)
                     <span class="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded">
@@ -64,6 +64,13 @@
                         </p>
                     @endif
                 </div>
+                @php
+                    $isAvailable = ($vinyl->vinylSec->quantity > 0 && $vinyl->vinylSec->in_stock == 1);
+                    $inWishlist = auth()->check() && $vinyl->inWishlist();
+                    $inWantlist = auth()->check() && $vinyl->inWantlist();
+                @endphp
+                
+                @if($isAvailable)
                 <button
                     type="button"
                     title="{{ $vinyl->vinylSec->quantity > 0 ? (auth()->check() && $vinyl->inWishlist() ? 'Remover dos favoritos' : 'Adicionar aos favoritos') : (auth()->check() && $vinyl->inWantlist() ? 'Remover da wantlist' : 'Adicionar à wantlist') }}"
@@ -79,17 +86,44 @@
                         <i class="fas fa-flag {{ auth()->check() && $vinyl->inWantlist() ? 'text-red-500' : '' }}"></i>
                     @endif
                 </button>
-            </div>
-            <div class="mt-4">
+                @else
                 <button
                     type="button"
-                    class="add-to-cart-button w-full text-gray-900 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 font-medium rounded-lg text-sm px-5 py-2.5 {{ !$vinyl->vinylSec->quantity > 0 ? 'opacity-50 cursor-not-allowed' : '' }}"
+                    title="{{ $inWantlist ? 'Remover da lista de notificações' : 'Adicionar à lista de notificações' }}"
+                    class="wantlist-button text-gray-400 hover:text-sky-500 focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-lg text-sm p-2"
+                    data-product-id="{{ $vinyl->id }}"
+                    data-product-type="{{ get_class($vinyl) }}"
+                    data-is-available="false"
+                    data-in-wantlist="{{ json_encode($inWantlist) }}"
+                    {{ !auth()->check() ? 'onclick="showLoginToast()"' : '' }}
+                >
+                    <i class="fas fa-bell {{ $inWantlist ? 'text-sky-500' : '' }}"></i>
+                </button>
+                @endif
+            </div>
+            <div class="mt-4">
+                @if($vinyl->vinylSec->quantity > 0 && $vinyl->vinylSec->in_stock == 1)
+                <button
+                    type="button"
+                    class="add-to-cart-button w-full text-gray-900 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 font-medium rounded-lg text-sm px-5 py-2.5"
                     data-product-id="{{ $vinyl->product ? $vinyl->product->id : $vinyl->id }}"
                     data-quantity="1"
-                    {{ $vinyl->vinylSec->quantity > 0 ? '' : 'disabled' }}
                 >
-                    <span class="add-to-cart-text">{{ $vinyl->vinylSec->quantity > 0 ? 'Adicionar ao Carrinho' : 'Indisponível' }}</span>
+                    <span class="add-to-cart-text">Adicionar ao Carrinho</span>
                 </button>
+                @else
+                <button
+                    type="button"
+                    class="add-to-wantlist-button w-full text-sky-700 bg-white border border-sky-300 focus:outline-none hover:bg-sky-50 focus:ring-4 focus:ring-sky-200 font-medium rounded-lg text-sm px-5 py-2.5 {{ auth()->check() && $vinyl->inWantlist() ? 'bg-sky-50' : '' }}"
+                    data-product-id="{{ $vinyl->id }}"
+                    data-product-type="{{ get_class($vinyl) }}"
+                    data-in-wantlist="{{ json_encode(auth()->check() && $vinyl->inWantlist()) }}"
+                    {{ !auth()->check() ? 'onclick="showLoginToast()"' : '' }}
+                >
+                    <i class="fas fa-bell mr-2"></i>
+                    <span class="wantlist-text">{{ auth()->check() && $vinyl->inWantlist() ? 'Você será notificado quando disponível' : 'Notifique-me quando disponível' }}</span>
+                </button>
+                @endif
             </div>
         </div>
     </div>
@@ -104,8 +138,8 @@
                 onerror="this.src='{{ asset('assets/images/placeholder.jpg') }}'"
             />
             <div class="absolute top-1 left-1 flex flex-col gap-1">
-                <span class="{{ $vinyl->vinylSec->quantity > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }} text-xs font-medium px-2 py-0.5 rounded-full">
-                    {{ $vinyl->vinylSec->quantity > 0 ? 'Disponível' : 'Indisponível' }}
+                <span class="{{ ($vinyl->vinylSec->quantity > 0 && $vinyl->vinylSec->in_stock == 1) ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }} text-xs font-medium px-2 py-0.5 rounded-full">
+                    {{ ($vinyl->vinylSec->quantity > 0 && $vinyl->vinylSec->in_stock == 1) ? 'Disponível' : 'Indisponível' }}
                 </span>
                 @if($vinyl->vinylSec->is_promotional && $vinyl->vinylSec->promotional_price && $vinyl->vinylSec->promotional_price > 0)
                     <span class="bg-red-100 text-red-800 text-xs font-medium px-2 py-0.5 rounded">
@@ -163,29 +197,63 @@
                     >
                         <i class="fas fa-play text-xs"></i>
                     </button>
+                    @php
+                        $isAvailable = ($vinyl->vinylSec->quantity > 0 && $vinyl->vinylSec->in_stock == 1);
+                        $inWishlist = auth()->check() && $vinyl->inWishlist();
+                        $inWantlist = auth()->check() && $vinyl->inWantlist();
+                    @endphp
+                    
+                    @if($isAvailable)
                     <button
                         type="button"
-                        title="{{ auth()->check() && $vinyl->inWishlist() ? 'Remover dos favoritos' : (auth()->check() && !$vinyl->vinylSec->quantity > 0 && $vinyl->inWantlist() ? 'Remover da wantlist' : 'Adicionar aos favoritos') }}"
+                        title="{{ $inWishlist ? 'Remover dos favoritos' : 'Adicionar aos favoritos' }}"
                         class="wishlist-button text-gray-400 hover:text-red-500 focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-lg text-sm p-2"
                         data-product-id="{{ $vinyl->id }}"
                         data-product-type="{{ get_class($vinyl) }}"
-                        data-is-available="{{ json_encode($vinyl->vinylSec->quantity > 0) }}"
-                        data-in-wishlist="{{ json_encode(auth()->check() && $vinyl->inWishlist()) }}"
-                        data-in-wantlist="{{ json_encode(auth()->check() && !$vinyl->vinylSec->quantity > 0 && $vinyl->inWantlist()) }}"
+                        data-is-available="true"
+                        data-in-wishlist="{{ json_encode($inWishlist) }}"
                     >
-                        <i class="fas {{ auth()->check() && $vinyl->inWantlist() ? 'fa-flag' : 'fa-heart' }} {{ (auth()->check() && $vinyl->inWishlist() || auth()->check() && $vinyl->inWantlist()) ? 'text-red-500' : '' }}"></i>
+                        <i class="fas fa-heart {{ $inWishlist ? 'text-red-500' : '' }}"></i>
                     </button>
+                    @else
                     <button
                         type="button"
-                        class="add-to-cart-button inline-flex items-center p-2 text-gray-900 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 {{ !$vinyl->vinylSec->quantity > 0 ? 'opacity-50 cursor-not-allowed' : '' }}"
+                        title="{{ $inWantlist ? 'Remover da lista de notificações' : 'Adicionar à lista de notificações' }}"
+                        class="wantlist-button text-gray-400 hover:text-sky-500 focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-lg text-sm p-2"
+                        data-product-id="{{ $vinyl->id }}"
+                        data-product-type="{{ get_class($vinyl) }}"
+                        data-is-available="false"
+                        data-in-wantlist="{{ json_encode($inWantlist) }}"
+                        {{ !auth()->check() ? 'onclick="showLoginToast()"' : '' }}
+                    >
+                        <i class="fas fa-bell {{ $inWantlist ? 'text-sky-500' : '' }}"></i>
+                    </button>
+                    @endif
+                    @if($vinyl->vinylSec->quantity > 0 && $vinyl->vinylSec->in_stock == 1)
+                    <button
+                        type="button"
+                        class="add-to-cart-button inline-flex items-center p-2 text-gray-900 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 focus:ring-4 focus:ring-gray-200"
                         data-product-id="{{ $vinyl->product ? $vinyl->product->id : $vinyl->id }}"
                         data-quantity="1"
-                        {{ $vinyl->vinylSec->quantity > 0 ? '' : 'disabled' }}
-                        title="{{ $vinyl->vinylSec->quantity > 0 ? 'Adicionar ao carrinho' : 'Produto indisponível' }}"
+                        title="Adicionar ao carrinho"
                     >
                         <i class="fas fa-shopping-cart"></i>
-                        <span class="add-to-cart-text sr-only">{{ $vinyl->vinylSec->quantity > 0 ? 'Adicionar ao Carrinho' : 'Indisponível' }}</span>
+                        <span class="add-to-cart-text sr-only">Adicionar ao Carrinho</span>
                     </button>
+                    @else
+                    <button
+                        type="button"
+                        class="wantlist-button add-to-wantlist-button inline-flex items-center p-2 text-sky-700 bg-white border border-sky-300 rounded-lg hover:bg-sky-50 focus:ring-4 focus:ring-sky-200 {{ auth()->check() && $vinyl->inWantlist() ? 'bg-sky-50' : '' }}"
+                        data-product-id="{{ $vinyl->id }}"
+                        data-product-type="{{ get_class($vinyl) }}"
+                        data-in-wantlist="{{ json_encode(auth()->check() && $vinyl->inWantlist()) }}"
+                        data-auth="{{ json_encode(auth()->check()) }}"
+                        title="{{ auth()->check() && $vinyl->inWantlist() ? 'Você já será notificado' : 'Notificar quando disponível' }}"
+                    >
+                        <i class="fas fa-bell"></i>
+                        <span class="wantlist-text sr-only">Notificar quando disponível</span>
+                    </button>
+                    @endif
                 </div>
             </div>
         </div>
@@ -195,6 +263,19 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Função para mostrar alerta para erros de reprodução - Usa a função global showToast
+    function showFlowbiteAlert(message, type = 'error') {
+        // Usa a função global showToast se disponível
+        if (typeof window.showToast === 'function') {
+            window.showToast(message, type);
+            return;
+        }
+        
+        // Fallback caso a função global não esteja disponível
+        console.warn('Função showToast não encontrada, usando alerta básico');
+        alert(message);
+    }
+
     // Adiciona eventos aos botões de play
     document.querySelectorAll('.play-button').forEach(button => {
         button.addEventListener('click', function(e) {
@@ -228,8 +309,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } catch (error) {
                 console.error('Erro:', error);
-                if (window.audioPlayer) {
-                    window.audioPlayer.showError(error.message);
+                if (typeof window.showToast === 'function') {
+                    window.showToast(error.message, 'error');
+                } else {
+                    console.warn('Função showToast não encontrada, usando alert básico');
+                    alert(error.message);
                 }
             }
         });

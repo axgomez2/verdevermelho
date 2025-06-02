@@ -197,7 +197,7 @@ class VinylController extends Controller
     // Edit and update methods
     public function edit($id)
     {
-        $vinyl = VinylMaster::with('vinylSec')->findOrFail($id);
+        $vinyl = VinylMaster::with(['vinylSec', 'artists', 'tracks'])->findOrFail($id);
         $weights = Weight::all();
         $dimensions = Dimension::all();
         $categories = CatStyleShop::all();
@@ -210,6 +210,7 @@ class VinylController extends Controller
         $vinyl = VinylMaster::findOrFail($id);
 
         $validatedData = $request->validate([
+            'title'               => 'required|string|max:255',
             'description'         => 'nullable|string',
             'weight_id'           => 'required|exists:weights,id',
             'dimension_id'        => 'required|exists:dimensions,id',
@@ -221,13 +222,27 @@ class VinylController extends Controller
             'in_stock'            => 'boolean',
             'category_ids'        => 'required|array',
             'category_ids.*'      => 'exists:cat_style_shop,id',
+            'artist_name'         => 'required|string|max:255',
+            'tracks'              => 'nullable|array',
+            'tracks.*.id'         => 'nullable|exists:tracks,id',
+            'tracks.*.name'       => 'required|string|max:255',
+            'tracks.*.duration'   => 'nullable|string',
+            'tracks.*.youtube_url' => 'nullable|string',
+            'tracks_to_delete'    => 'nullable|array',
+            'tracks_to_delete.*'  => 'exists:tracks,id',
         ]);
 
         DB::beginTransaction();
 
         try {
-            $vinyl->update(['description' => $validatedData['description']]);
+            // Atualizar dados básicos do disco
+            $vinyl->update([
+                'title' => $validatedData['title'],
+                'description' => $validatedData['description'],
+                'slug' => Str::slug($validatedData['title']),
+            ]);
 
+            // Atualizar vinylSec
             $vinyl->vinylSec()->updateOrCreate(
                 ['vinyl_master_id' => $vinyl->id],
                 [
@@ -242,6 +257,47 @@ class VinylController extends Controller
                 ]
             );
 
+            // Atualizar artista
+            if (isset($validatedData['artist_name']) && !empty($validatedData['artist_name'])) {
+                $artist = Artist::firstOrCreate(
+                    ['name' => $validatedData['artist_name']],
+                    ['slug' => Str::slug($validatedData['artist_name'])]
+                );
+
+                $vinyl->artists()->sync([$artist->id]);
+            }
+
+            // Excluir faixas marcadas para exclusão
+            if (isset($validatedData['tracks_to_delete']) && !empty($validatedData['tracks_to_delete'])) {
+                Track::whereIn('id', $validatedData['tracks_to_delete'])->delete();
+            }
+
+            // Atualizar ou criar faixas
+            if (isset($validatedData['tracks']) && !empty($validatedData['tracks'])) {
+                foreach ($validatedData['tracks'] as $trackData) {
+                    if (isset($trackData['id']) && !empty($trackData['id'])) {
+                        // Atualizar faixa existente
+                        $track = Track::find($trackData['id']);
+                        if ($track) {
+                            $track->update([
+                                'name' => $trackData['name'],
+                                'duration' => $trackData['duration'],
+                                'youtube_url' => $trackData['youtube_url']
+                            ]);
+                        }
+                    } else {
+                        // Criar nova faixa
+                        Track::create([
+                            'vinyl_master_id' => $vinyl->id,
+                            'name' => $trackData['name'],
+                            'duration' => $trackData['duration'],
+                            'youtube_url' => $trackData['youtube_url']
+                        ]);
+                    }
+                }
+            }
+
+            // Atualizar categorias
             $vinyl->catStyleShops()->sync($validatedData['category_ids']);
 
             DB::commit();

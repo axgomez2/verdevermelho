@@ -37,7 +37,7 @@ class WantlistController extends Controller
         if ($wantlistItem) {
             $wantlistItem->delete();
             $message = 'Item removido da Wantlist';
-            $added = false;
+            $inWantlist = false;
         } else {
             Wantlist::create([
                 'user_id' => Auth::id(),
@@ -45,14 +45,53 @@ class WantlistController extends Controller
                 'product_type' => $request->product_type,
             ]);
             $message = 'Item adicionado à Wantlist';
-            $added = true;
+            $inWantlist = true;
         }
+        
+        // Obter a contagem atualizada de itens na wantlist
+        $wantlist_count = Wantlist::where('user_id', Auth::id())->count();
 
         return response()->json([
             'success' => true,
             'message' => $message,
-            'added' => $added
+            'wantlist_count' => $wantlist_count,
+            'in_wantlist' => $inWantlist,
+        ]);
+    }
+    
+    public function remove(Request $request, $id)
+    {
+        // Obter o product_type do item, se disponível no request
+        $productType = $request->input('product_type', null);
+        
+        $query = [
+            'user_id' => Auth::id(),
+            'product_id' => $id,
+        ];
+        
+        // Adicionar product_type à consulta se estiver disponível
+        if ($productType) {
+            $query['product_type'] = $productType;
+        }
+        
+        $wantlistItem = Wantlist::where($query)->first();
+        
+        if ($wantlistItem) {
+            $wantlistItem->delete();
+            $message = 'Item removido da lista de notificações';
+            $success = true;
+        } else {
+            $message = 'Item não encontrado na lista de notificações';
+            $success = false;
+        }
+        
+        // Obter a contagem atualizada de itens na wantlist
+        $wantlist_count = Wantlist::where('user_id', Auth::id())->count();
+        
+        return response()->json([
+            'success' => $success,
+            'message' => $message,
+            'wantlist_count' => $wantlist_count,
         ]);
     }
 }
-

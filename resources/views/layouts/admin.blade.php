@@ -13,6 +13,9 @@
 
     <title>{{ config('app.name', 'Laravel') }} - Admin</title>
 
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
@@ -158,6 +161,21 @@
                             <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0 2a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-15a1 1 0 0 1 1 1v2a1 1 0 0 1-2 0V3a1 1 0 0 1 1-1zm0 16a1 1 0 0 1 1 1v2a1 1 0 0 1-2 0v-2a1 1 0 0 1 1-1zm7-7a1 1 0 0 1-1 1h-2a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1zM3 12a1 1 0 0 1 1-1h2a1 1 0 0 1 0 2H4a1 1 0 0 1-1-1z"/>
                         </svg>
                         <span class="ml-3">Configurações</span>
+                    </a>
+                </li>
+
+                <!-- PDV - Vendas no Balcão -->
+                <li>
+                    <a href="{{ route('admin.pos.index') }}"
+                       class="flex items-center p-2 text-gray-900 rounded-lg transition duration-75 group
+                              {{ request()->routeIs('admin.pos.*') ? 'bg-gray-100' : 'hover:bg-gray-100' }}">
+                        <svg class="w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900"
+                             aria-hidden="true" fill="none" stroke-linecap="round"
+                             stroke-linejoin="round" stroke-width="2"
+                             viewBox="0 0 24 24" stroke="currentColor">
+                            <path d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                        </svg>
+                        <span class="ml-3">PDV</span>
                     </a>
                 </li>
 

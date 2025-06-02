@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\VinylController;
 use App\Http\Controllers\Admin\ShippingController;
 use App\Http\Controllers\Admin\VinylImageController;
 use App\Http\Controllers\Admin\EquipmentController;
+use App\Http\Controllers\Admin\PosController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\YouTubeController;
 use Illuminate\Support\Facades\Route;
@@ -148,5 +149,13 @@ Route::middleware(['auth', 'rolemanager:admin'])->group(function () {
         Route::post('/pedidos/{id}/status', [OrderController::class, 'updateStatus'])->name('admin.orders.update-status');
         Route::post('/pedidos/{id}/rastreio', [OrderController::class, 'updateTracking'])->name('admin.orders.update-tracking');
         Route::get('/pedidos/{id}/etiqueta', [OrderController::class, 'generateShippingLabel'])->name('admin.orders.shipping-label');
+        
+        // PDV - Ponto de Venda
+        Route::get('/pdv', [PosController::class, 'index'])->name('admin.pos.index');
+        Route::get('/pdv/vendas', [PosController::class, 'sales'])->name('admin.pos.sales');
+        Route::get('/pdv/venda/{id}', [PosController::class, 'show'])->name('admin.pos.show');
+        Route::post('/pdv/venda', [PosController::class, 'store'])->name('admin.pos.store');
+        Route::post('/pdv/buscar-produtos', [PosController::class, 'search'])->name('admin.pos.search');
+        Route::post('/pdv/buscar-clientes', [PosController::class, 'searchCustomers'])->name('admin.pos.search-customers');
     });
 });
