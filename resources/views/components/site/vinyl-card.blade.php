@@ -11,10 +11,10 @@
                 onerror="this.src='{{ asset('assets/images/placeholder.jpg') }}'"
             />
             <div class="absolute top-2 left-2 flex flex-col gap-2">
-                <span class="{{ ($vinyl->vinylSec->quantity > 0 && $vinyl->vinylSec->in_stock == 1) ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }} text-xs font-medium px-2.5 py-0.5 rounded-full">
-                    {{ ($vinyl->vinylSec->quantity > 0 && $vinyl->vinylSec->in_stock == 1) ? 'Disponível' : 'Indisponível' }}
+                <span class="{{ ($vinyl->vinylSec && $vinyl->vinylSec->quantity > 0 && $vinyl->vinylSec->in_stock == 1) ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }} text-xs font-medium px-2.5 py-0.5 rounded-full">
+                    {{ ($vinyl->vinylSec && $vinyl->vinylSec->quantity > 0 && $vinyl->vinylSec->in_stock == 1) ? 'Disponível' : 'Indisponível' }}
                 </span>
-                @if($vinyl->vinylSec->is_promotional && $vinyl->vinylSec->promotional_price && $vinyl->vinylSec->promotional_price > 0)
+                @if($vinyl->vinylSec && $vinyl->vinylSec->is_promotional && $vinyl->vinylSec->promotional_price && $vinyl->vinylSec->promotional_price > 0)
                     <span class="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded">
                         Oferta
                     </span>
@@ -51,21 +51,23 @@
             <div class="flex justify-between items-start mt-2.5">
                 <div>
                     <p class="text-xs text-gray-500">{{ $vinyl->recordLabel->name }} • {{ $vinyl->release_year }}</p>
-                    @if($vinyl->vinylSec->is_promotional && $vinyl->vinylSec->promotional_price && $vinyl->vinylSec->promotional_price > 0)
+                    @if($vinyl->vinylSec && $vinyl->vinylSec->is_promotional && $vinyl->vinylSec->promotional_price && $vinyl->vinylSec->promotional_price > 0)
                         <p class="text-xs text-gray-500 line-through">
                             R$ {{ number_format($vinyl->vinylSec->price, 2, ',', '.') }}
                         </p>
                         <p class="text-lg font-bold text-gray-900">
                             R$ {{ number_format($vinyl->vinylSec->promotional_price, 2, ',', '.') }}
                         </p>
-                    @else
+                    @elseif($vinyl->vinylSec)
                         <p class="text-lg font-bold text-gray-900">
                             R$ {{ number_format($vinyl->vinylSec->price, 2, ',', '.') }}
                         </p>
+                    @else
+                        <p class="text-lg font-bold text-gray-900">Preço indisponível</p>
                     @endif
                 </div>
                 @php
-                    $isAvailable = ($vinyl->vinylSec->quantity > 0 && $vinyl->vinylSec->in_stock == 1);
+                    $isAvailable = ($vinyl->vinylSec && $vinyl->vinylSec->quantity > 0 && $vinyl->vinylSec->in_stock == 1);
                     $inWishlist = auth()->check() && $vinyl->inWishlist();
                     $inWantlist = auth()->check() && $vinyl->inWantlist();
                 @endphp
@@ -73,14 +75,14 @@
                 @if($isAvailable)
                 <button
                     type="button"
-                    title="{{ $vinyl->vinylSec->quantity > 0 ? (auth()->check() && $vinyl->inWishlist() ? 'Remover dos favoritos' : 'Adicionar aos favoritos') : (auth()->check() && $vinyl->inWantlist() ? 'Remover da wantlist' : 'Adicionar à wantlist') }}"
+                    title="{{ ($vinyl->vinylSec && $vinyl->vinylSec->quantity > 0) ? (auth()->check() && $vinyl->inWishlist() ? 'Remover dos favoritos' : 'Adicionar aos favoritos') : (auth()->check() && $vinyl->inWantlist() ? 'Remover da wantlist' : 'Adicionar à wantlist') }}"
                     class="wishlist-button text-gray-400 hover:text-red-500 focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-lg text-sm p-2"
                     data-product-id="{{ $vinyl->id }}"
                     data-product-type="{{ get_class($vinyl) }}"
-                    data-is-available="{{ json_encode($vinyl->vinylSec->quantity > 0) }}"
-                    data-in-wishlist="{{ json_encode(auth()->check() && ($vinyl->vinylSec->quantity > 0 ? $vinyl->inWishlist() : $vinyl->inWantlist())) }}"
+                    data-is-available="{{ json_encode($vinyl->vinylSec && $vinyl->vinylSec->quantity > 0) }}"
+                    data-in-wishlist="{{ json_encode(auth()->check() && ($vinyl->vinylSec && $vinyl->vinylSec->quantity > 0 ? $vinyl->inWishlist() : $vinyl->inWantlist())) }}"
                 >
-                    @if($vinyl->vinylSec->quantity > 0)
+                    @if($vinyl->vinylSec && $vinyl->vinylSec->quantity > 0)
                         <i class="fas fa-heart {{ auth()->check() && $vinyl->inWishlist() ? 'text-red-500' : '' }}"></i>
                     @else
                         <i class="fas fa-flag {{ auth()->check() && $vinyl->inWantlist() ? 'text-red-500' : '' }}"></i>
@@ -138,10 +140,10 @@
                 onerror="this.src='{{ asset('assets/images/placeholder.jpg') }}'"
             />
             <div class="absolute top-1 left-1 flex flex-col gap-1">
-                <span class="{{ ($vinyl->vinylSec->quantity > 0 && $vinyl->vinylSec->in_stock == 1) ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }} text-xs font-medium px-2 py-0.5 rounded-full">
-                    {{ ($vinyl->vinylSec->quantity > 0 && $vinyl->vinylSec->in_stock == 1) ? 'Disponível' : 'Indisponível' }}
+                <span class="{{ ($vinyl->vinylSec && $vinyl->vinylSec->quantity > 0 && $vinyl->vinylSec->in_stock == 1) ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }} text-xs font-medium px-2 py-0.5 rounded-full">
+                    {{ ($vinyl->vinylSec && $vinyl->vinylSec->quantity > 0 && $vinyl->vinylSec->in_stock == 1) ? 'Disponível' : 'Indisponível' }}
                 </span>
-                @if($vinyl->vinylSec->is_promotional && $vinyl->vinylSec->promotional_price && $vinyl->vinylSec->promotional_price > 0)
+                @if($vinyl->vinylSec && $vinyl->vinylSec->is_promotional && $vinyl->vinylSec->promotional_price && $vinyl->vinylSec->promotional_price > 0)
                     <span class="bg-red-100 text-red-800 text-xs font-medium px-2 py-0.5 rounded">
                         Oferta
                     </span>
@@ -162,17 +164,19 @@
             </div>
             <div class="flex justify-between items-center mt-2">
                 <div>
-                    @if($vinyl->vinylSec->is_promotional && $vinyl->vinylSec->promotional_price && $vinyl->vinylSec->promotional_price > 0)
+                    @if($vinyl->vinylSec && $vinyl->vinylSec->is_promotional && $vinyl->vinylSec->promotional_price && $vinyl->vinylSec->promotional_price > 0)
                         <p class="text-xs text-gray-500 line-through">
                             R$ {{ number_format($vinyl->vinylSec->price, 2, ',', '.') }}
                         </p>
                         <p class="text-base font-bold text-gray-900">
                             R$ {{ number_format($vinyl->vinylSec->promotional_price, 2, ',', '.') }}
                         </p>
-                    @else
+                    @elseif($vinyl->vinylSec)
                         <p class="text-base font-bold text-gray-900">
                             R$ {{ number_format($vinyl->vinylSec->price, 2, ',', '.') }}
                         </p>
+                    @else
+                        <p class="text-base font-bold text-gray-900">Preço indisponível</p>
                     @endif
                 </div>
                 <div class="flex gap-2">
@@ -198,7 +202,7 @@
                         <i class="fas fa-play text-xs"></i>
                     </button>
                     @php
-                        $isAvailable = ($vinyl->vinylSec->quantity > 0 && $vinyl->vinylSec->in_stock == 1);
+                        $isAvailable = ($vinyl->vinylSec && $vinyl->vinylSec->quantity > 0 && $vinyl->vinylSec->in_stock == 1);
                         $inWishlist = auth()->check() && $vinyl->inWishlist();
                         $inWantlist = auth()->check() && $vinyl->inWantlist();
                     @endphp

@@ -1,6 +1,6 @@
 <div class="bg-white shadow-md hover:shadow-lg transition-shadow duration-300 rounded-lg overflow-hidden">
     <div class="flex flex-col sm:flex-row">
-        <div class="sm:w-48 h-48 flex-shrink-0">
+        <div class="sm:w-48 h-48 flex-shrink-0"> 
             <img
                 src="{{ $vinyl->cover_image }}"
                 alt="{{ $vinyl->title }} by {{ $vinyl->artists->pluck('name')->implode(', ') }}"
