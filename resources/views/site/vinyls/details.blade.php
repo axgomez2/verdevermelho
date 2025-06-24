@@ -4,7 +4,7 @@
         isInCart: {{ $vinyl->inCart() ? 'true' : 'false' }},
         quantity: 1,
         maxQuantity: {{ $vinyl->vinylSec ? $vinyl->vinylSec->quantity : 0 }},
-        isInStock: {{ $vinyl->vinylSec && $vinyl->vinylSec->quantity > 0 ? 'true' : 'false' }},
+        isInStock: {{ $vinyl->vinylSec && $vinyl->vinylSec->quantity > 0 && $vinyl->vinylSec->in_stock == 1 ? 'true' : 'false' }},
         currentImage: 0,
         images: [
             '{{ asset('storage/' . $vinyl->cover_image) }}'
@@ -51,7 +51,7 @@
                         addButton.classList.add('loading');
                         addButton.disabled = true;
                     }
-                    
+
                     // Enviar para a API
                     fetch('{{ route("site.cart.add") }}', {
                         method: 'POST',
@@ -128,18 +128,18 @@
                     // Mostrar alerta sobre necessidade de login (opcional)
                     // alert('Faça login para ouvir as faixas!');
                 @endif
-                
+
                 // Mostrar o player se tiver URL do YouTube
                 if (!track.youtube_url) {
                     alert('Esta faixa não possui audiõvel disponível.');
                     return;
                 }
-                
+
                 // Mostrar o player
                 const player = document.getElementById('audio-player');
                 if (player) {
                     player.classList.remove('hidden');
-                    
+
                     // Atualizar informações da faixa
                     const trackTitle = document.getElementById('track-title');
                     const trackTitleMobile = document.getElementById('track-title-mobile');
@@ -147,7 +147,7 @@
                     const trackArtistMobile = document.getElementById('track-artist-mobile');
                     const albumCover = document.getElementById('album-cover');
                     const albumCoverMobile = document.getElementById('album-cover-mobile');
-                    
+
                     if (trackTitle) trackTitle.textContent = track.name;
                     if (trackTitleMobile) trackTitleMobile.textContent = track.name;
                     if (trackArtist) trackArtist.textContent = track.artist;
@@ -160,11 +160,11 @@
                         albumCoverMobile.src = track.cover_url;
                         albumCoverMobile.alt = track.vinyl_title;
                     }
-                    
+
                     // Disparar evento para informar o player que deve carregar essa faixa
                     const event = new CustomEvent('load-track', { detail: track });
                     document.dispatchEvent(event);
-                    
+
                     // Iniciar a reprodução automicamente
                     setTimeout(() => {
                         const playPauseBtn = document.getElementById('play-pause-btn');
@@ -177,7 +177,7 @@
                 }
             }
         };
-        
+
         document.addEventListener('alpine:init', () => {
             Alpine.data('audioPlayer', audioPlayerData);
         });
@@ -242,14 +242,16 @@
                             </div>
                         </div>
                         <div class="flex items-center flex-wrap gap-2 mt-8">
-                            @if($vinyl->vinylSec->is_promotional == 1)
-                            <p class="text-gray-500 text-base"><strike>R$ {{ number_format($vinyl->vinylSec->price * 1.2, 2, ',', '.') }}</strike></p>
-                            <h4 class="text-stone-800 text-2xl sm:text-3xl font-bold">R$ {{ number_format($vinyl->vinylSec->price, 2, ',', '.') }}</h4>
+                            @if($vinyl->vinylSec && $vinyl->vinylSec->is_promotional == 1 && $vinyl->vinylSec->promotional_price && $vinyl->vinylSec->promotional_price > 0)
+                            <p class="text-gray-500 text-base"><strike>R$ {{ number_format($vinyl->vinylSec->price, 2, ',', '.') }}</strike></p>
+                            <h4 class="text-stone-800 text-2xl sm:text-3xl font-bold">R$ {{ number_format($vinyl->vinylSec->promotional_price, 2, ',', '.') }}</h4>
                             <div class="flex py-1 px-2 bg-amber-600 font-semibold ml-4">
                                 <span class="text-white text-sm">oferta</span>
                             </div>
-                            @else
+                            @elseif($vinyl->vinylSec)
                             <h4 class="text-stone-800 text-2xl sm:text-3xl font-bold">R$ {{ number_format($vinyl->vinylSec->price, 2, ',', '.') }}</h4>
+                            @else
+                            <h4 class="text-stone-800 text-2xl sm:text-3xl font-bold">Preço indisponível</h4>
                             @endif
                         </div>
 
@@ -259,7 +261,7 @@
                                 <div class="flex items-center space-x-2">
                                     <span class="text-gray-700">Quantidade:</span>
                                     <div class="flex border border-gray-300 rounded overflow-hidden">
-                                        <button type="button" @click="quantity > 1 ? quantity-- : null" 
+                                        <button type="button" @click="quantity > 1 ? quantity-- : null"
                                             class="px-2 py-1 bg-gray-100 hover:bg-gray-200">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
@@ -277,9 +279,9 @@
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="w-full py-2" x-show="!isInStock">
-                                <button 
+                                <button
                                     id="add-to-wantlist-button"
                                     type="button"
                                     class="w-full text-sky-700 bg-white border border-sky-300 focus:outline-none hover:bg-sky-50 focus:ring-4 focus:ring-sky-200 font-medium rounded-lg text-sm px-5 py-2.5 {{ auth()->check() && $vinyl->inWantlist() ? 'bg-sky-50' : '' }}"
@@ -294,7 +296,7 @@
                                     </span>
                                 </button>
                             </div>
-                            
+
                             <button type="button"
                                 class="btn btn-outline btn-primary flex-grow btn-add-to-cart"
                                 @click="addToCart()"
@@ -303,7 +305,7 @@
                             >
                                 <span x-text="isInCart ? 'Adicionado ao carrinho' : 'Adicionar ao carrinho'"></span>
                             </button>
-                            
+
                             <button type="button"
                                 class="btn btn-primary flex-grow"
                                 @click="buyNow()"
@@ -345,7 +347,7 @@
 
 
                                                 @if($track->youtube_url)
-                                                <button 
+                                                <button
                                                 class="btn btn-sm btn-circle btn-ghost track-play-button play-track-btn"
                                                 title="Reproduzir faixa"
                                                 data-track-id="{{ $track->id }}"
@@ -396,11 +398,11 @@
             ->inRandomOrder()
             ->take(4)
             ->get();
-            
+
             // Buscar discos da mesma categoria
             $categoryIds = $vinyl->catStyleShops->pluck('id')->toArray();
             $sameCategoryVinyls = [];
-            
+
             if (!empty($categoryIds)) {
                 $sameCategoryVinyls = \App\Models\VinylMaster::whereHas('catStyleShops', function($query) use ($categoryIds) {
                     $query->whereIn('cat_style_shop_id', $categoryIds);
@@ -414,29 +416,29 @@
             }
         @endphp
 
-        @if($sameArtistVinyls->count() > 0)
+                @if($sameArtistVinyls->count() > 0)
         <div class="mb-10">
             <h2 class="text-2xl font-bold mb-6">Mais de {{ $vinyl->artists->pluck('name')->implode(', ') }}</h2>
-            
+
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 @foreach($sameArtistVinyls as $relatedVinyl)
                 <div class="bg-white rounded-lg shadow-md overflow-hidden h-full flex flex-col">
                     <a href="{{ route('site.vinyl.show', ['artistSlug' => $relatedVinyl->artists->first()->slug ?? 'artista', 'titleSlug' => $relatedVinyl->slug]) }}" class="block overflow-hidden">
                         <div class="relative aspect-square">
-                            <img src="{{ asset('storage/' . $relatedVinyl->cover_image) }}" 
-                                alt="{{ $relatedVinyl->title }}" 
+                            <img src="{{ asset('storage/' . $relatedVinyl->cover_image) }}"
+                                alt="{{ $relatedVinyl->title }}"
                                 class="w-full h-full object-cover transition-transform duration-300 hover:scale-105">
-                            
-                            @if(!$relatedVinyl->vinylSec || $relatedVinyl->vinylSec->quantity <= 0)
+
+                            @if(!$relatedVinyl->vinylSec || $relatedVinyl->vinylSec->quantity <= 0 || $relatedVinyl->vinylSec->in_stock != 1)
                             <span class="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">Esgotado</span>
                             @endif
-                            
+
                             @if($relatedVinyl->vinylSec && $relatedVinyl->vinylSec->is_promotional == 1)
                             <span class="absolute top-2 left-2 bg-amber-500 text-white text-xs font-bold px-2 py-1 rounded">Promoção</span>
                             @endif
                         </div>
                     </a>
-                    
+
                     <div class="p-4 flex-grow flex flex-col">
                         <h3 class="font-semibold text-lg mb-1 line-clamp-1">
                             <a href="{{ route('site.vinyl.show', ['artistSlug' => $relatedVinyl->artists->first()->slug ?? 'artista', 'titleSlug' => $relatedVinyl->slug]) }}" class="hover:text-blue-600 transition-colors">
@@ -444,13 +446,15 @@
                             </a>
                         </h3>
                         <p class="text-gray-600 mb-2 line-clamp-1">{{ $relatedVinyl->title }}</p>
-                        
+
                         <div class="mt-auto">
                             @if($relatedVinyl->vinylSec && $relatedVinyl->vinylSec->price > 0)
-                                @if($relatedVinyl->vinylSec->is_promotional == 1)
-                                <p class="text-gray-500 line-through text-sm">R$ {{ number_format($relatedVinyl->vinylSec->price * 1.2, 2, ',', '.') }}</p>
-                                @endif
+                                @if($relatedVinyl->vinylSec->is_promotional == 1 && $relatedVinyl->vinylSec->promotional_price && $relatedVinyl->vinylSec->promotional_price > 0)
+                                <p class="text-gray-500 line-through text-sm">R$ {{ number_format($relatedVinyl->vinylSec->price, 2, ',', '.') }}</p>
+                                <p class="text-lg font-bold">R$ {{ number_format($relatedVinyl->vinylSec->promotional_price, 2, ',', '.') }}</p>
+                                @else
                                 <p class="text-lg font-bold">R$ {{ number_format($relatedVinyl->vinylSec->price, 2, ',', '.') }}</p>
+                                @endif
                             @else
                                 <p class="text-gray-500">Preço indisponível</p>
                             @endif
@@ -462,29 +466,29 @@
         </div>
         @endif
 
-        @if($sameCategoryVinyls && $sameCategoryVinyls->count() > 0)
+                @if($sameCategoryVinyls && $sameCategoryVinyls->count() > 0)
         <div class="mb-10">
             <h2 class="text-2xl font-bold mb-6">Você pode gostar também</h2>
-            
+
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 @foreach($sameCategoryVinyls as $relatedVinyl)
                 <div class="bg-white rounded-lg shadow-md overflow-hidden h-full flex flex-col">
                     <a href="{{ route('site.vinyl.show', ['artistSlug' => $relatedVinyl->artists->first()->slug ?? 'artista', 'titleSlug' => $relatedVinyl->slug]) }}" class="block overflow-hidden">
                         <div class="relative aspect-square">
-                            <img src="{{ asset('storage/' . $relatedVinyl->cover_image) }}" 
-                                alt="{{ $relatedVinyl->title }}" 
+                            <img src="{{ asset('storage/' . $relatedVinyl->cover_image) }}"
+                                alt="{{ $relatedVinyl->title }}"
                                 class="w-full h-full object-cover transition-transform duration-300 hover:scale-105">
-                            
-                            @if(!$relatedVinyl->vinylSec || $relatedVinyl->vinylSec->quantity <= 0)
+
+                            @if(!$relatedVinyl->vinylSec || $relatedVinyl->vinylSec->quantity <= 0 || $relatedVinyl->vinylSec->in_stock != 1)
                             <span class="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">Esgotado</span>
                             @endif
-                            
+
                             @if($relatedVinyl->vinylSec && $relatedVinyl->vinylSec->is_promotional == 1)
                             <span class="absolute top-2 left-2 bg-amber-500 text-white text-xs font-bold px-2 py-1 rounded">Promoção</span>
                             @endif
                         </div>
                     </a>
-                    
+
                     <div class="p-4 flex-grow flex flex-col">
                         <h3 class="font-semibold text-lg mb-1 line-clamp-1">
                             <a href="{{ route('site.vinyl.show', ['artistSlug' => $relatedVinyl->artists->first()->slug ?? 'artista', 'titleSlug' => $relatedVinyl->slug]) }}" class="hover:text-blue-600 transition-colors">
@@ -492,13 +496,15 @@
                             </a>
                         </h3>
                         <p class="text-gray-600 mb-2 line-clamp-1">{{ $relatedVinyl->title }}</p>
-                        
+
                         <div class="mt-auto">
                             @if($relatedVinyl->vinylSec && $relatedVinyl->vinylSec->price > 0)
-                                @if($relatedVinyl->vinylSec->is_promotional == 1)
-                                <p class="text-gray-500 line-through text-sm">R$ {{ number_format($relatedVinyl->vinylSec->price * 1.2, 2, ',', '.') }}</p>
-                                @endif
+                                @if($relatedVinyl->vinylSec->is_promotional == 1 && $relatedVinyl->vinylSec->promotional_price && $relatedVinyl->vinylSec->promotional_price > 0)
+                                <p class="text-gray-500 line-through text-sm">R$ {{ number_format($relatedVinyl->vinylSec->price, 2, ',', '.') }}</p>
+                                <p class="text-lg font-bold">R$ {{ number_format($relatedVinyl->vinylSec->promotional_price, 2, ',', '.') }}</p>
+                                @else
                                 <p class="text-lg font-bold">R$ {{ number_format($relatedVinyl->vinylSec->price, 2, ',', '.') }}</p>
+                                @endif
                             @else
                                 <p class="text-gray-500">Preço indisponível</p>
                             @endif
@@ -521,18 +527,18 @@
                     const productId = this.dataset.productId;
                     const productType = this.dataset.productType;
                     const isInWantlist = this.dataset.inWantlist === 'true';
-                    
+
                     // Se o usuário não estiver logado, o atributo onclick já lidará com isso
                     if (!this.getAttribute('onclick')) {
                         toggleWantlistItem(productId, productType, isInWantlist, this);
                     }
                 });
             }
-            
+
             // Função para alternar item na wantlist
             function toggleWantlistItem(productId, productType, isInWantlist, button) {
                 const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-                
+
                 fetch('/wantlist/toggle', {
                     method: 'POST',
                     headers: {
@@ -550,22 +556,22 @@
                     if (data.success) {
                         // Atualizar o atributo data-in-wantlist
                         button.dataset.inWantlist = data.in_wantlist.toString();
-                        
+
                         // Atualizar classes de estilo
                         if (data.in_wantlist) {
                             button.classList.add('bg-sky-50');
                         } else {
                             button.classList.remove('bg-sky-50');
                         }
-                        
+
                         // Atualizar o texto
                         const textSpan = button.querySelector('.wantlist-text');
                         if (textSpan) {
-                            textSpan.textContent = data.in_wantlist 
-                                ? 'Você será notificado quando disponível' 
+                            textSpan.textContent = data.in_wantlist
+                                ? 'Você será notificado quando disponível'
                                 : 'Notifique-me quando disponível';
                         }
-                        
+
                         // Mostrar mensagem
                         alert(data.message);
                     }
@@ -575,7 +581,7 @@
                     alert('Erro ao processar sua solicitação. Tente novamente.');
                 });
             }
-            
+
             // Função para mostrar mensagem de login necessário
             window.showLoginToast = function() {
                 alert('É necessário estar logado para adicionar à lista de notificações.');
@@ -585,12 +591,12 @@
             };
             // Encontrar todos os botões de play
             const playButtons = document.querySelectorAll('.play-track-btn');
-            
+
             // Adicionar evento de clique a cada botão
             playButtons.forEach(button => {
                 button.addEventListener('click', function(e) {
                     e.preventDefault();
-                    
+
                     // Obter dados da faixa
                     const trackData = {
                         id: this.dataset.trackId,
@@ -600,13 +606,13 @@
                         cover_url: this.dataset.trackCover,
                         vinyl_title: this.dataset.trackVinyl
                     };
-                    
+
                     // Tentar diferentes métodos para iniciar o player
                     try {
                         // Tentar o objeto audioPlayer global
                         if (window.audioPlayer && typeof window.audioPlayer.loadTrack === 'function') {
                             window.audioPlayer.loadTrack(trackData);
-                        } 
+                        }
                         // Tentar com o classe AudioPlayer
                         else if (window.AudioPlayer) {
                             // Se a instância ainda não existe, criar uma

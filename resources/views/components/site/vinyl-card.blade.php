@@ -71,7 +71,7 @@
                     $inWishlist = auth()->check() && $vinyl->inWishlist();
                     $inWantlist = auth()->check() && $vinyl->inWantlist();
                 @endphp
-                
+
                 @if($isAvailable)
                 <button
                     type="button"
@@ -104,7 +104,7 @@
                 @endif
             </div>
             <div class="mt-4">
-                @if($vinyl->vinylSec->quantity > 0 && $vinyl->vinylSec->in_stock == 1)
+                @if($vinyl->vinylSec && $vinyl->vinylSec->quantity > 0 && $vinyl->vinylSec->in_stock == 1)
                 <button
                     type="button"
                     class="add-to-cart-button w-full text-gray-900 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 font-medium rounded-lg text-sm px-5 py-2.5"
@@ -206,7 +206,7 @@
                         $inWishlist = auth()->check() && $vinyl->inWishlist();
                         $inWantlist = auth()->check() && $vinyl->inWantlist();
                     @endphp
-                    
+
                     @if($isAvailable)
                     <button
                         type="button"
@@ -233,7 +233,7 @@
                         <i class="fas fa-bell {{ $inWantlist ? 'text-sky-500' : '' }}"></i>
                     </button>
                     @endif
-                    @if($vinyl->vinylSec->quantity > 0 && $vinyl->vinylSec->in_stock == 1)
+                    @if($vinyl->vinylSec && $vinyl->vinylSec->quantity > 0 && $vinyl->vinylSec->in_stock == 1)
                     <button
                         type="button"
                         class="add-to-cart-button inline-flex items-center p-2 text-gray-900 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 focus:ring-4 focus:ring-gray-200"
@@ -274,7 +274,7 @@ document.addEventListener('DOMContentLoaded', function() {
             window.showToast(message, type);
             return;
         }
-        
+
         // Fallback caso a função global não esteja disponível
         console.warn('Função showToast não encontrada, usando alerta básico');
         alert(message);
